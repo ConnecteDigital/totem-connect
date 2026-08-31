@@ -1,0 +1,28 @@
+node_modules
+.DS_Store
+
+# build output / cache
+dist
+dist-ssr
+.output
+.vercel
+.nitro
+.tanstack
+.vinxi
+.vite
+*.tsbuildinfo
+*.local
+__unconfig*
+todos.json
+
+# env
+.env
+.env.*
+!.env.example
+
+# tooling
+.wrangler
+
+# editor / OS
+.idea
+Thumbs.db
