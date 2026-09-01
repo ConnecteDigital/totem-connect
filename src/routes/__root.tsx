@@ -58,19 +58,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** Registra o service worker só no totem (o PDV/Relatórios não precisam). */
+/**
+ * Limpa qualquer service worker antigo (a versão anterior assumia todo o
+ * domínio e servia cache quebrado). O manifest sozinho já dá a tela cheia.
+ */
 function RegistrarPWA() {
   useEffect(() => {
-    if (
-      typeof navigator === 'undefined' ||
-      !('serviceWorker' in navigator) ||
-      !location.pathname.startsWith('/totem')
-    ) {
-      return
-    }
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      /* sem SW não tem problema — o manifest sozinho já tira a barra */
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => r.unregister())
     })
+    if ('caches' in window) {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)))
+    }
   }, [])
   return null
 }
