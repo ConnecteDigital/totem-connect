@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { criarSupabaseServidor } from '#/lib/supabase/server'
+import { resolverEstabelecimentoTotem } from '#/server/_comum'
 import type { CardapioTotem } from '#/lib/tipos'
 
 /**
@@ -9,22 +10,7 @@ import type { CardapioTotem } from '#/lib/tipos'
 export const getCardapioTotem = createServerFn({ method: 'GET' }).handler(
   async (): Promise<CardapioTotem> => {
     const supa = criarSupabaseServidor()
-    const token = process.env.TOTEM_DEVICE_TOKEN
-
-    let estabelecimentoId = process.env.VITE_ESTABELECIMENTO_ID ?? ''
-    if (token) {
-      const { data: disp } = await supa
-        .from('dispositivos')
-        .select('estabelecimento_id')
-        .eq('token', token)
-        .eq('tipo', 'totem')
-        .eq('ativo', true)
-        .maybeSingle()
-      if (disp?.estabelecimento_id) estabelecimentoId = disp.estabelecimento_id
-    }
-    if (!estabelecimentoId) {
-      throw new Error('Totem não vinculado a um estabelecimento (TOTEM_DEVICE_TOKEN).')
-    }
+    const estabelecimentoId = await resolverEstabelecimentoTotem(supa)
 
     const [cat, prod] = await Promise.all([
       supa

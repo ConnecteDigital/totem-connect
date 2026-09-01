@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { buscarPedido, type PedidoDb } from '#/lib/painel/pedidosDb'
+import type { PedidoDb } from '#/lib/painel/pedidosDb'
+import { getPedidoImpressao } from '#/server/pedidoImpressao'
 import { TicketCozinha } from '#/components/impressao/Folhas'
 
 export const Route = createFileRoute('/imprimir/cozinha/$id')({ component: Pagina })
@@ -11,7 +12,7 @@ function Pagina() {
   const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
-    buscarPedido(id)
+    getPedidoImpressao({ data: { id } })
       .then((p) => {
         setPedido(p)
         if (p) setTimeout(() => window.print(), 300)

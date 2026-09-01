@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { cn } from '#/lib/cn'
 import { useCarrinho } from '#/lib/carrinho'
 import { formatarBRL } from '#/lib/formato'
+import { criarPedido, type CriarPedidoInput } from '#/server/criarPedido'
 import { CabecalhoTotem } from '#/components/totem/CabecalhoTotem'
 import { RodapeVoltar } from '#/components/totem/RodapeVoltar'
 import { IconeCartao, IconePix } from '#/components/icones'
@@ -12,14 +13,45 @@ export const Route = createFileRoute('/totem/pagamento')({ component: Pagamento 
 type Forma = 'cartao' | 'pix'
 
 function Pagamento() {
-  const { valorTotal } = useCarrinho()
+  const carrinho = useCarrinho()
   const [forma, setForma] = useState<Forma | null>(null)
+  const [processando, setProcessando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  // MOCK: aqui vai entrar a bridge nativa da maquininha (Fase 3).
-  function pagar() {
-    if (!forma) return
-    navigate({ to: '/totem/pedido-realizado' })
+  async function pagar() {
+    if (!forma || processando) return
+    setProcessando(true)
+    setErro(null)
+
+    // MOCK: aqui entra a bridge nativa da maquininha (Fase 3).
+    // Hoje o "pagamento" é aprovado direto e o pedido já nasce como 'pago'.
+    const payload: CriarPedidoInput = {
+      nomeCliente: carrinho.nomeCliente,
+      telefone: carrinho.telefone,
+      tipoConsumo: carrinho.tipoConsumo ?? 'comer_aqui',
+      modoEntrega: carrinho.modoEntrega,
+      endereco: carrinho.endereco,
+      formaPagamento: forma === 'pix' ? 'pix' : 'cartao_credito',
+      itens: carrinho.itens.map((i) => ({
+        produtoId: i.produto.id,
+        quantidade: i.quantidade,
+        personalizacao: i.personalizacao,
+        adicionalIds: i.adicionais.map((a) => a.id),
+        observacoes: i.observacoes,
+      })),
+    }
+
+    try {
+      const res = await criarPedido({ data: payload })
+      navigate({
+        to: '/totem/pedido-realizado',
+        search: { numero: res.numeroPedido, id: res.pedidoId },
+      })
+    } catch (e) {
+      setErro((e as Error).message || 'Não foi possível concluir o pedido.')
+      setProcessando(false)
+    }
   }
 
   return (
@@ -27,7 +59,7 @@ function Pagamento() {
       <CabecalhoTotem />
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center px-8 py-10">
         <h1 className="text-4xl font-extrabold">Como deseja pagar?</h1>
-        <p className="mt-2 text-white/60">Total a pagar: {formatarBRL(valorTotal)}</p>
+        <p className="mt-2 text-white/60">Total a pagar: {formatarBRL(carrinho.valorTotal)}</p>
 
         <div className="mt-10 flex w-full gap-5">
           <OpcaoPagamento
@@ -50,12 +82,14 @@ function Pagamento() {
           Siga na maquininha ao lado para concluir o pagamento.
         </p>
 
+        {erro && <p className="mt-4 text-center text-sm text-red-400">{erro}</p>}
+
         <button
           onClick={pagar}
-          disabled={!forma}
+          disabled={!forma || processando}
           className="mt-8 w-full rounded-pill bg-laranja px-8 py-6 text-xl font-extrabold text-white transition hover:bg-laranja-escuro disabled:opacity-40"
         >
-          Pagar {formatarBRL(valorTotal)}
+          {processando ? 'Processando…' : `Pagar ${formatarBRL(carrinho.valorTotal)}`}
         </button>
       </div>
       <div className="px-8 pb-8">
