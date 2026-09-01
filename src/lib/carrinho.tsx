@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Adicional, Produto } from '#/mock/cardapio'
+import type { Adicional, Produto } from '#/lib/tipos'
 
 export type TipoConsumo = 'comer_aqui' | 'para_viagem'
 export type ModoEntrega = 'retirada' | 'entrega'

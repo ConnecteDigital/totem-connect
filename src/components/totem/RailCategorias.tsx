@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from 'react'
 import { cn } from '#/lib/cn'
-import type { Categoria } from '#/mock/cardapio'
+import type { Categoria } from '#/lib/tipos'
 import {
   IconeCombo,
   IconeHamburguer,
@@ -9,12 +9,16 @@ import {
   IconeSobremesa,
 } from '#/components/icones'
 
-const icones: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
-  'cat-combos': IconeCombo,
-  'cat-hamburgueres': IconeHamburguer,
-  'cat-porcoes': IconePorcao,
-  'cat-bebidas': IconeBebida,
-  'cat-sobremesas': IconeSobremesa,
+type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>
+
+function iconeDaCategoria(nome: string): IconeSvg {
+  const n = nome.toLowerCase()
+  if (n.includes('combo')) return IconeCombo
+  if (n.includes('burg') || n.includes('lanch') || n.includes('sandu')) return IconeHamburguer
+  if (n.includes('porç') || n.includes('porc') || n.includes('acompanh')) return IconePorcao
+  if (n.includes('bebid') || n.includes('drink') || n.includes('suco')) return IconeBebida
+  if (n.includes('sobrem') || n.includes('doce') || n.includes('sorvet')) return IconeSobremesa
+  return IconeCombo
 }
 
 export function RailCategorias({
@@ -29,7 +33,7 @@ export function RailCategorias({
   return (
     <nav className="flex w-40 shrink-0 flex-col gap-3">
       {categorias.map((c) => {
-        const Icone = icones[c.id] ?? IconeCombo
+        const Icone = iconeDaCategoria(c.nome)
         const selecionada = c.id === ativa
         return (
           <button

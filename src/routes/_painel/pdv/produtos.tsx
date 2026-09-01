@@ -267,6 +267,9 @@ function FormProduto({
   const [categoriaId, setCategoriaId] = useState(produto?.categoria_id ?? categoriaPadrao ?? '')
   const [disponivel, setDisponivel] = useState(produto?.disponivel ?? true)
   const [fotoUrl, setFotoUrl] = useState<string | null>(produto?.foto_url ?? null)
+  const [personalizacoes, setPersonalizacoes] = useState(
+    (produto?.personalizacoes ?? []).join(', '),
+  )
   const [adicionais, setAdicionais] = useState(adicionaisIniciais)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -286,6 +289,10 @@ function FormProduto({
         foto_url: fotoUrl,
         disponivel,
         ordem: produto?.ordem ?? 0,
+        personalizacoes: personalizacoes
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
       })
       await salvarAdicionais(
         id,
@@ -392,6 +399,17 @@ function FormProduto({
             onChange={(e) => setDisponivel(e.target.checked)}
           />
           Disponível no totem
+        </label>
+
+        <label className="mt-3 block text-sm font-medium">
+          Personalizações{' '}
+          <span className="font-normal text-cinza-texto">(separadas por vírgula)</span>
+          <input
+            value={personalizacoes}
+            onChange={(e) => setPersonalizacoes(e.target.value)}
+            placeholder="Padrão, Sem cebola, Sem tomate"
+            className="mt-1 w-full rounded-lg border border-cinza-medio px-3 py-2 outline-none focus:border-laranja"
+          />
         </label>
 
         <div className="mt-4">

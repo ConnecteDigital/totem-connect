@@ -17,6 +17,7 @@ export type ProdutoDb = {
   foto_url: string | null
   disponivel: boolean
   ordem: number
+  personalizacoes: string[] | null
 }
 
 export type AdicionalDb = {
@@ -100,35 +101,26 @@ export async function salvarProduto(input: {
   foto_url: string | null
   disponivel: boolean
   ordem: number
+  personalizacoes: string[]
 }): Promise<string> {
+  const campos = {
+    categoria_id: input.categoria_id,
+    nome: input.nome,
+    descricao: input.descricao,
+    preco: input.preco,
+    foto_url: input.foto_url,
+    disponivel: input.disponivel,
+    ordem: input.ordem,
+    personalizacoes: input.personalizacoes,
+  }
   if (input.id) {
-    const { error } = await supabase
-      .from('produtos')
-      .update({
-        categoria_id: input.categoria_id,
-        nome: input.nome,
-        descricao: input.descricao,
-        preco: input.preco,
-        foto_url: input.foto_url,
-        disponivel: input.disponivel,
-        ordem: input.ordem,
-      })
-      .eq('id', input.id)
+    const { error } = await supabase.from('produtos').update(campos).eq('id', input.id)
     if (error) throw error
     return input.id
   }
   const { data, error } = await supabase
     .from('produtos')
-    .insert({
-      estabelecimento_id: input.estabelecimento_id,
-      categoria_id: input.categoria_id,
-      nome: input.nome,
-      descricao: input.descricao,
-      preco: input.preco,
-      foto_url: input.foto_url,
-      disponivel: input.disponivel,
-      ordem: input.ordem,
-    })
+    .insert({ estabelecimento_id: input.estabelecimento_id, ...campos })
     .select('id')
     .single()
   if (error) throw error

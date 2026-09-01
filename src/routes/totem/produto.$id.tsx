@@ -1,6 +1,11 @@
 import { useState } from 'react'
-import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
-import { produtos, type Adicional } from '#/mock/cardapio'
+import {
+  Link,
+  createFileRoute,
+  useLoaderData,
+  useNavigate,
+} from '@tanstack/react-router'
+import type { Adicional } from '#/lib/tipos'
 import { useCarrinho } from '#/lib/carrinho'
 import { formatarBRL } from '#/lib/formato'
 import { cn } from '#/lib/cn'
@@ -9,26 +14,34 @@ import { Botao } from '#/components/totem/Botao'
 import { Stepper } from '#/components/totem/Stepper'
 import { RodapeVoltar } from '#/components/totem/RodapeVoltar'
 
-export const Route = createFileRoute('/totem/produto/$id')({
-  component: DetalheProduto,
-  loader: ({ params }) => {
-    const produto = produtos.find((p) => p.id === params.id)
-    if (!produto) throw notFound()
-    return { produto }
-  },
-})
+export const Route = createFileRoute('/totem/produto/$id')({ component: DetalheProduto })
 
 function DetalheProduto() {
-  const { produto } = Route.useLoaderData()
+  const { id } = Route.useParams()
+  const { produtos } = useLoaderData({ from: '/totem' })
+  const produto = produtos.find((p) => p.id === id)
   const { adicionar } = useCarrinho()
   const navigate = useNavigate()
 
   const [quantidade, setQuantidade] = useState(1)
   const [personalizacao, setPersonalizacao] = useState<string | null>(
-    produto.personalizacoes[0] ?? null,
+    produto?.personalizacoes[0] ?? null,
   )
   const [selecionados, setSelecionados] = useState<Adicional[]>([])
   const [observacoes, setObservacoes] = useState('')
+
+  if (!produto) {
+    return (
+      <div className="grid min-h-screen place-items-center px-8 text-center text-white/70">
+        <div>
+          <p className="text-xl font-bold text-white">Produto não encontrado</p>
+          <Link to="/totem/cardapio" className="mt-3 inline-block text-laranja">
+            Voltar ao cardápio
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const precoUnit =
     produto.preco + selecionados.reduce((s, a) => s + a.preco, 0)
@@ -39,9 +52,11 @@ function DetalheProduto() {
     )
   }
 
+  const itemProduto = produto
+
   function adicionarAoPedido() {
     adicionar({
-      produto,
+      produto: itemProduto,
       quantidade,
       personalizacao,
       adicionais: selecionados,
@@ -54,8 +69,12 @@ function DetalheProduto() {
     <>
       <CabecalhoTotem />
       <div className="mx-auto grid w-full max-w-5xl flex-1 gap-8 px-8 py-6 md:grid-cols-2">
-        <div className="grid aspect-square place-items-center rounded-card bg-superficie text-[120px]">
-          🍔
+        <div className="grid aspect-square place-items-center overflow-hidden rounded-card bg-superficie text-[120px]">
+          {produto.fotoUrl ? (
+            <img src={produto.fotoUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            '🍔'
+          )}
         </div>
 
         <div className="flex flex-col">

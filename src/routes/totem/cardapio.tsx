@@ -1,12 +1,7 @@
 import { useMemo, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useLoaderData, useNavigate } from '@tanstack/react-router'
 import { useCarrinho } from '#/lib/carrinho'
-import {
-  buscarProdutos,
-  categorias,
-  produtosPorCategoria,
-  type Produto,
-} from '#/mock/cardapio'
+import { buscarProdutos, produtosPorCategoria, type Produto } from '#/lib/tipos'
 import { formatarBRL } from '#/lib/formato'
 import { CabecalhoTotem } from '#/components/totem/CabecalhoTotem'
 import { CarrinhoLateral } from '#/components/totem/CarrinhoLateral'
@@ -19,14 +14,18 @@ import { IconeMais } from '#/components/icones'
 export const Route = createFileRoute('/totem/cardapio')({ component: Cardapio })
 
 function Cardapio() {
+  const { categorias, produtos } = useLoaderData({ from: '/totem' })
   const { adicionar } = useCarrinho()
   const navigate = useNavigate()
-  const [catAtiva, setCatAtiva] = useState(categorias[0].id)
+  const [catAtiva, setCatAtiva] = useState(categorias[0]?.id ?? '')
   const [busca, setBusca] = useState('')
 
   const lista = useMemo<Produto[]>(
-    () => (busca.trim() ? buscarProdutos(busca) : produtosPorCategoria(catAtiva)),
-    [busca, catAtiva],
+    () =>
+      busca.trim()
+        ? buscarProdutos(produtos, busca)
+        : produtosPorCategoria(produtos, catAtiva),
+    [produtos, busca, catAtiva],
   )
 
   return (
@@ -106,7 +105,13 @@ function CardProduto({
 }) {
   return (
     <div className="flex flex-col overflow-hidden rounded-card bg-superficie">
-      <div className="grid aspect-[4/3] place-items-center bg-superficie-2 text-5xl">🍔</div>
+      <div className="grid aspect-[4/3] place-items-center overflow-hidden bg-superficie-2 text-5xl">
+        {produto.fotoUrl ? (
+          <img src={produto.fotoUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          '🍔'
+        )}
+      </div>
       <div className="flex flex-1 flex-col p-4">
         <div className="font-semibold">{produto.nome}</div>
         <div className="mt-1 line-clamp-2 text-xs text-white/50">{produto.descricao}</div>
