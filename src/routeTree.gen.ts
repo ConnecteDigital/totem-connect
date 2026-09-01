@@ -27,6 +27,8 @@ import { Route as TotemRevisaoRouteImport } from './routes/totem/revisao'
 import { Route as PainelPdvIndexRouteImport } from './routes/_painel/pdv/index'
 import { Route as PainelPdvProdutosRouteImport } from './routes/_painel/pdv/produtos'
 import { Route as PainelRelatoriosIndexRouteImport } from './routes/_painel/relatorios/index'
+import { Route as ApiMaquininhaConfirmarRouteImport } from './routes/api/maquininha/confirmar'
+import { Route as ApiMaquininhaPendentesRouteImport } from './routes/api/maquininha/pendentes'
 import { Route as ImprimirComandaIdRouteImport } from './routes/imprimir/comanda.$id'
 import { Route as ImprimirCozinhaIdRouteImport } from './routes/imprimir/cozinha.$id'
 import { Route as TotemProdutoIdRouteImport } from './routes/totem/produto.$id'
@@ -121,6 +123,16 @@ const PainelRelatoriosIndexRoute = PainelRelatoriosIndexRouteImport.update({
   path: '/relatorios/',
   getParentRoute: () => PainelRoute,
 } as any)
+const ApiMaquininhaConfirmarRoute = ApiMaquininhaConfirmarRouteImport.update({
+  id: '/api/maquininha/confirmar',
+  path: '/api/maquininha/confirmar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMaquininhaPendentesRoute = ApiMaquininhaPendentesRouteImport.update({
+  id: '/api/maquininha/pendentes',
+  path: '/api/maquininha/pendentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImprimirComandaIdRoute = ImprimirComandaIdRouteImport.update({
   id: '/imprimir/comanda/$id',
   path: '/imprimir/comanda/$id',
@@ -153,6 +165,8 @@ export interface FileRoutesByFullPath {
   '/totem/revisao': typeof TotemRevisaoRoute
   '/totem/': typeof TotemIndexRoute
   '/pdv/produtos': typeof PainelPdvProdutosRoute
+  '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
+  '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
   '/imprimir/comanda/$id': typeof ImprimirComandaIdRoute
   '/imprimir/cozinha/$id': typeof ImprimirCozinhaIdRoute
   '/totem/produto/$id': typeof TotemProdutoIdRoute
@@ -174,6 +188,8 @@ export interface FileRoutesByTo {
   '/totem/revisao': typeof TotemRevisaoRoute
   '/totem': typeof TotemIndexRoute
   '/pdv/produtos': typeof PainelPdvProdutosRoute
+  '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
+  '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
   '/imprimir/comanda/$id': typeof ImprimirComandaIdRoute
   '/imprimir/cozinha/$id': typeof ImprimirCozinhaIdRoute
   '/totem/produto/$id': typeof TotemProdutoIdRoute
@@ -198,6 +214,8 @@ export interface FileRoutesById {
   '/totem/revisao': typeof TotemRevisaoRoute
   '/totem/': typeof TotemIndexRoute
   '/_painel/pdv/produtos': typeof PainelPdvProdutosRoute
+  '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
+  '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
   '/imprimir/comanda/$id': typeof ImprimirComandaIdRoute
   '/imprimir/cozinha/$id': typeof ImprimirCozinhaIdRoute
   '/totem/produto/$id': typeof TotemProdutoIdRoute
@@ -222,6 +240,8 @@ export interface FileRouteTypes {
     | '/totem/revisao'
     | '/totem/'
     | '/pdv/produtos'
+    | '/api/maquininha/confirmar'
+    | '/api/maquininha/pendentes'
     | '/imprimir/comanda/$id'
     | '/imprimir/cozinha/$id'
     | '/totem/produto/$id'
@@ -243,6 +263,8 @@ export interface FileRouteTypes {
     | '/totem/revisao'
     | '/totem'
     | '/pdv/produtos'
+    | '/api/maquininha/confirmar'
+    | '/api/maquininha/pendentes'
     | '/imprimir/comanda/$id'
     | '/imprimir/cozinha/$id'
     | '/totem/produto/$id'
@@ -266,6 +288,8 @@ export interface FileRouteTypes {
     | '/totem/revisao'
     | '/totem/'
     | '/_painel/pdv/produtos'
+    | '/api/maquininha/confirmar'
+    | '/api/maquininha/pendentes'
     | '/imprimir/comanda/$id'
     | '/imprimir/cozinha/$id'
     | '/totem/produto/$id'
@@ -278,6 +302,8 @@ export interface RootRouteChildren {
   TotemRouteRoute: typeof TotemRouteRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
   DevMaquininhaRoute: typeof DevMaquininhaRoute
+  ApiMaquininhaConfirmarRoute: typeof ApiMaquininhaConfirmarRoute
+  ApiMaquininhaPendentesRoute: typeof ApiMaquininhaPendentesRoute
   ImprimirComandaIdRoute: typeof ImprimirComandaIdRoute
   ImprimirCozinhaIdRoute: typeof ImprimirCozinhaIdRoute
 }
@@ -410,6 +436,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelRelatoriosIndexRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/api/maquininha/confirmar': {
+      id: '/api/maquininha/confirmar'
+      path: '/api/maquininha/confirmar'
+      fullPath: '/api/maquininha/confirmar'
+      preLoaderRoute: typeof ApiMaquininhaConfirmarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/maquininha/pendentes': {
+      id: '/api/maquininha/pendentes'
+      path: '/api/maquininha/pendentes'
+      fullPath: '/api/maquininha/pendentes'
+      preLoaderRoute: typeof ApiMaquininhaPendentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/imprimir/comanda/$id': {
       id: '/imprimir/comanda/$id'
       path: '/imprimir/comanda/$id'
@@ -488,6 +528,8 @@ const rootRouteChildren: RootRouteChildren = {
   TotemRouteRoute: TotemRouteRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
   DevMaquininhaRoute: DevMaquininhaRoute,
+  ApiMaquininhaConfirmarRoute: ApiMaquininhaConfirmarRoute,
+  ApiMaquininhaPendentesRoute: ApiMaquininhaPendentesRoute,
   ImprimirComandaIdRoute: ImprimirComandaIdRoute,
   ImprimirCozinhaIdRoute: ImprimirCozinhaIdRoute,
 }

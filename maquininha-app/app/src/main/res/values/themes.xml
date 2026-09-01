@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.TotemMaquininha" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#111111</item>
+        <item name="android:windowBackground">#111111</item>
+    </style>
+</resources>

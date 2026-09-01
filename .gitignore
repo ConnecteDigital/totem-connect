@@ -26,3 +26,15 @@ todos.json
 # editor / OS
 .idea
 Thumbs.db
+
+# app Android da maquininha (maquininha-app/)
+maquininha-app/.gradle/
+maquininha-app/build/
+maquininha-app/app/build/
+maquininha-app/local.properties
+maquininha-app/.idea/
+maquininha-app/captures/
+*.apk
+*.aab
+*.keystore
+!gradle-wrapper.jar
