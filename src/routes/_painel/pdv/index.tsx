@@ -6,6 +6,8 @@ import { cn } from '#/lib/cn'
 import {
   PROXIMO_STATUS,
   ROTULO_STATUS,
+  assinarPedidos,
+  listarEntreguesHoje,
   listarFila,
   mudarStatus,
   type PedidoDb,
@@ -14,29 +16,43 @@ import {
 
 export const Route = createFileRoute('/_painel/pdv/')({ component: Fila })
 
-const COLUNAS: StatusPedido[] = ['pago', 'em_preparo', 'pronto']
+const COLUNAS_ATIVAS: StatusPedido[] = ['pago', 'em_preparo', 'pronto']
 
 function Fila() {
   const { usuario } = useAuth()
   const estId = usuario?.estabelecimento_id ?? null
-  const [pedidos, setPedidos] = useState<PedidoDb[]>([])
+  const [ativos, setAtivos] = useState<PedidoDb[]>([])
+  const [entregues, setEntregues] = useState<PedidoDb[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [aberto, setAberto] = useState<PedidoDb | null>(null)
+  const [aoVivo, setAoVivo] = useState(false)
 
   const carregar = useCallback(async () => {
     if (!estId) return
     try {
-      setPedidos(await listarFila(estId))
+      const [a, e] = await Promise.all([listarFila(estId), listarEntreguesHoje(estId)])
+      setAtivos(a)
+      setEntregues(e)
+      setErro(null)
     } catch (e) {
       setErro((e as Error).message)
     }
   }, [estId])
 
   useEffect(() => {
+    if (!estId) return
     void carregar()
-    const t = setInterval(carregar, 4000) // polling — troca por Realtime depois
-    return () => clearInterval(t)
-  }, [carregar])
+    // Realtime + polling de segurança (caso o socket caia)
+    const desassinar = assinarPedidos(estId, () => {
+      setAoVivo(true)
+      void carregar()
+    })
+    const t = setInterval(carregar, 15000)
+    return () => {
+      desassinar()
+      clearInterval(t)
+    }
+  }, [estId, carregar])
 
   if (!estId)
     return <p className="text-cinza-texto">Usuário sem estabelecimento vinculado.</p>
@@ -60,56 +76,34 @@ function Fila() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Fila de pedidos</h1>
-        <span className="text-sm text-cinza-texto">
-          {pedidos.length} ativo{pedidos.length === 1 ? '' : 's'} · atualiza sozinho
+        <span className="flex items-center gap-2 text-sm text-cinza-texto">
+          <span
+            className={cn(
+              'inline-block h-2 w-2 rounded-full',
+              aoVivo ? 'bg-green-500' : 'bg-cinza-medio',
+            )}
+          />
+          {ativos.length} ativo{ativos.length === 1 ? '' : 's'} ·{' '}
+          {aoVivo ? 'ao vivo' : 'atualizando'}
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {COLUNAS.map((col) => {
-          const lista = pedidos.filter((p) => p.status === col)
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {COLUNAS_ATIVAS.map((col) => {
+          const lista = ativos.filter((p) => p.status === col)
           return (
-            <div key={col} className="rounded-xl bg-cinza-claro p-3">
-              <h2 className="mb-3 flex items-center justify-between text-sm font-bold uppercase tracking-wide text-cinza-texto">
-                {ROTULO_STATUS[col]}
-                <span className="rounded-full bg-white px-2 py-0.5 text-xs">{lista.length}</span>
-              </h2>
-              <div className="space-y-2">
-                {lista.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setAberto(p)}
-                    className="w-full rounded-lg border border-cinza-medio bg-white p-3 text-left transition hover:border-laranja"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold">#{p.numero_pedido}</span>
-                      <span className="text-xs text-cinza-texto">
-                        {new Date(p.criado_em).toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <div className="text-sm font-medium">{p.nome_cliente ?? 'Sem nome'}</div>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      <Tag>
-                        {p.tipo_consumo === 'comer_aqui' ? 'Comer aqui' : 'Para viagem'}
-                      </Tag>
-                      {p.modo_entrega && <Tag>{p.modo_entrega === 'entrega' ? 'Entrega' : 'Retirada'}</Tag>}
-                    </div>
-                    <div className="mt-1 text-xs text-cinza-texto">
-                      {p.pedido_itens.reduce((s, i) => s + i.quantidade, 0)} itens ·{' '}
-                      {formatarBRL(p.valor_total)}
-                    </div>
-                  </button>
-                ))}
-                {lista.length === 0 && (
-                  <p className="py-4 text-center text-xs text-cinza-texto">—</p>
-                )}
-              </div>
-            </div>
+            <Coluna key={col} titulo={ROTULO_STATUS[col]} n={lista.length}>
+              {lista.map((p) => (
+                <CardPedido key={p.id} pedido={p} onClick={() => setAberto(p)} />
+              ))}
+            </Coluna>
           )
         })}
+        <Coluna titulo="Entregue (hoje)" n={entregues.length} tom="muted">
+          {entregues.map((p) => (
+            <CardPedido key={p.id} pedido={p} onClick={() => setAberto(p)} muted />
+          ))}
+        </Coluna>
       </div>
 
       {aberto && (
@@ -121,6 +115,70 @@ function Fila() {
         />
       )}
     </div>
+  )
+}
+
+function Coluna({
+  titulo,
+  n,
+  tom,
+  children,
+}: {
+  titulo: string
+  n: number
+  tom?: 'muted'
+  children: React.ReactNode
+}) {
+  return (
+    <div className={cn('rounded-xl p-3', tom === 'muted' ? 'bg-cinza-claro/60' : 'bg-cinza-claro')}>
+      <h2 className="mb-3 flex items-center justify-between text-sm font-bold uppercase tracking-wide text-cinza-texto">
+        {titulo}
+        <span className="rounded-full bg-white px-2 py-0.5 text-xs">{n}</span>
+      </h2>
+      <div className="space-y-2">
+        {children}
+        {n === 0 && <p className="py-4 text-center text-xs text-cinza-texto">—</p>}
+      </div>
+    </div>
+  )
+}
+
+function CardPedido({
+  pedido: p,
+  onClick,
+  muted,
+}: {
+  pedido: PedidoDb
+  onClick: () => void
+  muted?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full rounded-lg border bg-white p-3 text-left transition hover:border-laranja',
+        muted ? 'border-cinza-medio opacity-70' : 'border-cinza-medio',
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-bold">#{p.numero_pedido}</span>
+        <span className="text-xs text-cinza-texto">
+          {new Date(p.criado_em).toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>
+      </div>
+      <div className="text-sm font-medium">{p.nome_cliente ?? 'Sem nome'}</div>
+      <div className="mt-1 flex flex-wrap gap-1">
+        <Tag>{p.tipo_consumo === 'comer_aqui' ? 'Comer aqui' : 'Para viagem'}</Tag>
+        {p.modo_entrega && <Tag>{p.modo_entrega === 'entrega' ? 'Entrega' : 'Retirada'}</Tag>}
+      </div>
+      <div className="mt-1 text-xs text-cinza-texto">
+        {p.pedido_itens.reduce((s, i) => s + i.quantidade, 0)} itens ·{' '}
+        {formatarBRL(p.valor_total)}
+      </div>
+    </button>
   )
 }
 
@@ -144,6 +202,7 @@ function DetalhePedido({
   aoCancelar: () => void
 }) {
   const prox = PROXIMO_STATUS[pedido.status]
+  const finalizado = pedido.status === 'entregue' || pedido.status === 'cancelado'
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={aoFechar}>
       <div
@@ -218,18 +277,18 @@ function DetalhePedido({
           >
             Imprimir comanda
           </a>
-          <button
-            onClick={aoCancelar}
-            className="rounded-pill px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-          >
-            Cancelar
-          </button>
+          {!finalizado && (
+            <button
+              onClick={aoCancelar}
+              className="rounded-pill px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              Cancelar
+            </button>
+          )}
           {prox && (
             <button
               onClick={aoAvancar}
-              className={cn(
-                'ml-auto rounded-pill bg-laranja px-5 py-2 text-sm font-bold text-white hover:bg-laranja-escuro',
-              )}
+              className="ml-auto rounded-pill bg-laranja px-5 py-2 text-sm font-bold text-white hover:bg-laranja-escuro"
             >
               Marcar como {ROTULO_STATUS[prox]}
             </button>

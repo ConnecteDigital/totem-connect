@@ -17,6 +17,7 @@ import { Route as TotemCardapioRouteImport } from './routes/totem/cardapio'
 import { Route as TotemEnderecoRouteImport } from './routes/totem/endereco'
 import { Route as TotemIdentificacaoRouteImport } from './routes/totem/identificacao'
 import { Route as TotemModoEntregaRouteImport } from './routes/totem/modo-entrega'
+import { Route as TotemOfertaComboRouteImport } from './routes/totem/oferta-combo'
 import { Route as TotemOndeConsumirRouteImport } from './routes/totem/onde-consumir'
 import { Route as TotemPagamentoRouteImport } from './routes/totem/pagamento'
 import { Route as TotemPedidoRealizadoRouteImport } from './routes/totem/pedido-realizado'
@@ -65,6 +66,11 @@ const TotemIdentificacaoRoute = TotemIdentificacaoRouteImport.update({
 const TotemModoEntregaRoute = TotemModoEntregaRouteImport.update({
   id: '/modo-entrega',
   path: '/modo-entrega',
+  getParentRoute: () => TotemRouteRoute,
+} as any)
+const TotemOfertaComboRoute = TotemOfertaComboRouteImport.update({
+  id: '/oferta-combo',
+  path: '/oferta-combo',
   getParentRoute: () => TotemRouteRoute,
 } as any)
 const TotemOndeConsumirRoute = TotemOndeConsumirRouteImport.update({
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
   '/totem/modo-entrega': typeof TotemModoEntregaRoute
+  '/totem/oferta-combo': typeof TotemOfertaComboRoute
   '/totem/onde-consumir': typeof TotemOndeConsumirRoute
   '/totem/pagamento': typeof TotemPagamentoRoute
   '/totem/pedido-realizado': typeof TotemPedidoRealizadoRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
   '/totem/modo-entrega': typeof TotemModoEntregaRoute
+  '/totem/oferta-combo': typeof TotemOfertaComboRoute
   '/totem/onde-consumir': typeof TotemOndeConsumirRoute
   '/totem/pagamento': typeof TotemPagamentoRoute
   '/totem/pedido-realizado': typeof TotemPedidoRealizadoRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
   '/totem/modo-entrega': typeof TotemModoEntregaRoute
+  '/totem/oferta-combo': typeof TotemOfertaComboRoute
   '/totem/onde-consumir': typeof TotemOndeConsumirRoute
   '/totem/pagamento': typeof TotemPagamentoRoute
   '/totem/pedido-realizado': typeof TotemPedidoRealizadoRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/totem/endereco'
     | '/totem/identificacao'
     | '/totem/modo-entrega'
+    | '/totem/oferta-combo'
     | '/totem/onde-consumir'
     | '/totem/pagamento'
     | '/totem/pedido-realizado'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/totem/endereco'
     | '/totem/identificacao'
     | '/totem/modo-entrega'
+    | '/totem/oferta-combo'
     | '/totem/onde-consumir'
     | '/totem/pagamento'
     | '/totem/pedido-realizado'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/totem/endereco'
     | '/totem/identificacao'
     | '/totem/modo-entrega'
+    | '/totem/oferta-combo'
     | '/totem/onde-consumir'
     | '/totem/pagamento'
     | '/totem/pedido-realizado'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/modo-entrega'
       fullPath: '/totem/modo-entrega'
       preLoaderRoute: typeof TotemModoEntregaRouteImport
+      parentRoute: typeof TotemRouteRoute
+    }
+    '/totem/oferta-combo': {
+      id: '/totem/oferta-combo'
+      path: '/oferta-combo'
+      fullPath: '/totem/oferta-combo'
+      preLoaderRoute: typeof TotemOfertaComboRouteImport
       parentRoute: typeof TotemRouteRoute
     }
     '/totem/onde-consumir': {
@@ -380,6 +399,7 @@ interface TotemRouteRouteChildren {
   TotemEnderecoRoute: typeof TotemEnderecoRoute
   TotemIdentificacaoRoute: typeof TotemIdentificacaoRoute
   TotemModoEntregaRoute: typeof TotemModoEntregaRoute
+  TotemOfertaComboRoute: typeof TotemOfertaComboRoute
   TotemOndeConsumirRoute: typeof TotemOndeConsumirRoute
   TotemPagamentoRoute: typeof TotemPagamentoRoute
   TotemPedidoRealizadoRoute: typeof TotemPedidoRealizadoRoute
@@ -393,6 +413,7 @@ const TotemRouteRouteChildren: TotemRouteRouteChildren = {
   TotemEnderecoRoute: TotemEnderecoRoute,
   TotemIdentificacaoRoute: TotemIdentificacaoRoute,
   TotemModoEntregaRoute: TotemModoEntregaRoute,
+  TotemOfertaComboRoute: TotemOfertaComboRoute,
   TotemOndeConsumirRoute: TotemOndeConsumirRoute,
   TotemPagamentoRoute: TotemPagamentoRoute,
   TotemPedidoRealizadoRoute: TotemPedidoRealizadoRoute,

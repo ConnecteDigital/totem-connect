@@ -67,6 +67,41 @@ export async function listarFila(estabelecimentoId: string): Promise<PedidoDb[]>
   return (data ?? []) as unknown as PedidoDb[]
 }
 
+/** Pedidos entregues hoje (histórico do dia no PDV). */
+export async function listarEntreguesHoje(estabelecimentoId: string): Promise<PedidoDb[]> {
+  const inicio = new Date()
+  inicio.setHours(0, 0, 0, 0)
+  const { data, error } = await supabase
+    .from('pedidos')
+    .select(SELECT_PEDIDO)
+    .eq('estabelecimento_id', estabelecimentoId)
+    .eq('status', 'entregue')
+    .gte('criado_em', inicio.toISOString())
+    .order('numero_pedido', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as unknown as PedidoDb[]
+}
+
+/** Assina mudanças em `pedidos` do estabelecimento via Supabase Realtime. */
+export function assinarPedidos(estabelecimentoId: string, aoMudar: () => void): () => void {
+  const canal = supabase
+    .channel(`pedidos-${estabelecimentoId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'pedidos',
+        filter: `estabelecimento_id=eq.${estabelecimentoId}`,
+      },
+      () => aoMudar(),
+    )
+    .subscribe()
+  return () => {
+    void supabase.removeChannel(canal)
+  }
+}
+
 export async function buscarPedido(id: string): Promise<PedidoDb | null> {
   const { data, error } = await supabase
     .from('pedidos')

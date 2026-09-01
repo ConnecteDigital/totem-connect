@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { criarSupabaseServidor } from '#/lib/supabase/server'
 import { resolverEstabelecimentoTotem } from '#/server/_comum'
@@ -104,62 +105,63 @@ export const criarPedido = createServerFn({ method: 'POST' })
 
     const end = data.modoEntrega === 'entrega' ? data.endereco : null
 
-    const pedidoRes = await supa
-      .from('pedidos')
-      .insert({
-        estabelecimento_id: estabelecimentoId,
-        numero_pedido: numeroPedido,
-        tipo_consumo: data.tipoConsumo,
-        modo_entrega: data.tipoConsumo === 'para_viagem' ? data.modoEntrega : null,
-        status: 'pago',
-        forma_pagamento: data.formaPagamento,
-        valor_total: valorTotal,
-        nome_cliente: data.nomeCliente || null,
-        telefone_cliente: data.telefone || null,
-        taxa_entrega: 0,
-        pago_em: new Date().toISOString(),
-        entrega_cep: end?.cep || null,
-        entrega_logradouro: end?.logradouro || null,
-        entrega_numero: end?.numero || null,
-        entrega_complemento: end?.complemento || null,
-        entrega_bairro: end?.bairro || null,
-        entrega_cidade: end?.cidade || null,
-        entrega_referencia: end?.referencia || null,
-      })
-      .select('id')
-      .single()
-    if (pedidoRes.error) throw pedidoRes.error
-    const pedidoId = pedidoRes.data.id as string
+    // ids gerados aqui pra montar tudo antes e inserir em lote (sem depender de ordem de retorno)
+    const pedidoId = randomUUID()
 
-    for (const it of data.itens) {
+    const linhasItens = data.itens.map((it) => {
       const p = produtos.get(it.produtoId)!
-      const itemRes = await supa
-        .from('pedido_itens')
-        .insert({
-          pedido_id: pedidoId,
-          produto_id: it.produtoId,
-          produto_nome: p.nome,
-          quantidade: it.quantidade,
-          preco_unitario: Number(p.preco),
-          observacoes: montarObservacoes(it.personalizacao, it.observacoes),
-        })
-        .select('id')
-        .single()
-      if (itemRes.error) throw itemRes.error
-
-      if (it.adicionalIds.length) {
-        const rows = it.adicionalIds.map((aid) => {
-          const a = adicionais.get(aid)!
-          return {
-            pedido_item_id: itemRes.data.id as string,
-            produto_adicional_id: aid,
-            adicional_nome: a.nome,
-            adicional_preco: Number(a.preco),
-          }
-        })
-        const r = await supa.from('pedido_item_adicionais').insert(rows)
-        if (r.error) throw r.error
+      return {
+        id: randomUUID(),
+        pedido_id: pedidoId,
+        produto_id: it.produtoId,
+        produto_nome: p.nome,
+        quantidade: it.quantidade,
+        preco_unitario: Number(p.preco),
+        observacoes: montarObservacoes(it.personalizacao, it.observacoes),
       }
+    })
+
+    const linhasAdicionais = data.itens.flatMap((it, idx) =>
+      it.adicionalIds.map((aid) => {
+        const a = adicionais.get(aid)!
+        return {
+          pedido_item_id: linhasItens[idx].id,
+          produto_adicional_id: aid,
+          adicional_nome: a.nome,
+          adicional_preco: Number(a.preco),
+        }
+      }),
+    )
+
+    const pedidoRes = await supa.from('pedidos').insert({
+      id: pedidoId,
+      estabelecimento_id: estabelecimentoId,
+      numero_pedido: numeroPedido,
+      tipo_consumo: data.tipoConsumo,
+      modo_entrega: data.tipoConsumo === 'para_viagem' ? data.modoEntrega : null,
+      status: 'pago',
+      forma_pagamento: data.formaPagamento,
+      valor_total: valorTotal,
+      nome_cliente: data.nomeCliente || null,
+      telefone_cliente: data.telefone || null,
+      taxa_entrega: 0,
+      pago_em: new Date().toISOString(),
+      entrega_cep: end?.cep || null,
+      entrega_logradouro: end?.logradouro || null,
+      entrega_numero: end?.numero || null,
+      entrega_complemento: end?.complemento || null,
+      entrega_bairro: end?.bairro || null,
+      entrega_cidade: end?.cidade || null,
+      entrega_referencia: end?.referencia || null,
+    })
+    if (pedidoRes.error) throw pedidoRes.error
+
+    const itensRes = await supa.from('pedido_itens').insert(linhasItens)
+    if (itensRes.error) throw itensRes.error
+
+    if (linhasAdicionais.length) {
+      const adicRowRes = await supa.from('pedido_item_adicionais').insert(linhasAdicionais)
+      if (adicRowRes.error) throw adicRowRes.error
     }
 
     await supa.from('pagamentos').insert({

@@ -62,11 +62,13 @@ type CarrinhoContexto = {
   nomeCliente: string
   totalItens: number
   valorTotal: number
+  comboJaOferecido: boolean
   definirTipoConsumo: (t: TipoConsumo) => void
   definirModoEntrega: (m: ModoEntrega) => void
   definirEndereco: (e: Endereco) => void
   definirTelefone: (t: string) => void
   definirNomeCliente: (n: string) => void
+  marcarComboOferecido: () => void
   adicionar: (args: ArgsAdicionar) => void
   mudarQuantidade: (linhaId: string, delta: number) => void
   remover: (linhaId: string) => void
@@ -82,6 +84,7 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
   const [endereco, setEndereco] = useState<Endereco | null>(null)
   const [telefone, setTelefone] = useState('')
   const [nomeCliente, setNomeCliente] = useState('')
+  const [comboJaOferecido, setComboJaOferecido] = useState(false)
 
   const valor = useMemo<CarrinhoContexto>(
     () => ({
@@ -91,6 +94,7 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
       endereco,
       telefone,
       nomeCliente,
+      comboJaOferecido,
       totalItens: itens.reduce((s, i) => s + i.quantidade, 0),
       valorTotal: itens.reduce((s, i) => s + subtotalItem(i), 0),
       definirTipoConsumo: (t) => setTipoConsumo(t),
@@ -98,6 +102,7 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
       definirEndereco: (e) => setEndereco(e),
       definirTelefone: (t) => setTelefone(t),
       definirNomeCliente: (n) => setNomeCliente(n),
+      marcarComboOferecido: () => setComboJaOferecido(true),
       adicionar: ({
         produto,
         quantidade,
@@ -134,9 +139,10 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
         setEndereco(null)
         setTelefone('')
         setNomeCliente('')
+        setComboJaOferecido(false)
       },
     }),
-    [itens, tipoConsumo, modoEntrega, endereco, telefone, nomeCliente],
+    [itens, tipoConsumo, modoEntrega, endereco, telefone, nomeCliente, comboJaOferecido],
   )
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>

@@ -97,7 +97,7 @@ export function CarrinhoLateral({ className }: { className?: string }) {
               bloco
               className="mt-4"
               disabled={vazio}
-              onClick={() => navigate({ to: '/totem/revisao' })}
+              onClick={() => navigate({ to: '/totem/oferta-combo' })}
               iconeDireita={<span aria-hidden>→</span>}
             >
               Ver pedido

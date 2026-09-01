@@ -36,6 +36,11 @@ export function produtosPorCategoria(
   return produtos.filter((x) => x.categoriaId === categoriaId && x.disponivel)
 }
 
+/** categoria de combos (heurística pelo nome) */
+export function categoriaCombos(categorias: Categoria[]): Categoria | undefined {
+  return categorias.find((c) => c.nome.toLowerCase().includes('combo'))
+}
+
 export function buscarProdutos(produtos: Produto[], termo: string): Produto[] {
   const t = termo.trim().toLowerCase()
   if (!t) return []

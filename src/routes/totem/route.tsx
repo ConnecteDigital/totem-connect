@@ -1,5 +1,7 @@
-import { Outlet, createFileRoute } from '@tanstack/react-router'
-import { CarrinhoProvider } from '#/lib/carrinho'
+import { Outlet, createFileRoute, useLocation, useNavigate } from '@tanstack/react-router'
+import { CarrinhoProvider, useCarrinho } from '#/lib/carrinho'
+import { useInatividade } from '#/lib/useInatividade'
+import { AvisoInatividade } from '#/components/totem/AvisoInatividade'
 import { getCardapioTotem } from '#/server/cardapioTotem'
 
 export const Route = createFileRoute('/totem')({
@@ -23,9 +25,32 @@ export const Route = createFileRoute('/totem')({
 function LayoutTotem() {
   return (
     <CarrinhoProvider>
-      <div className="totem-root flex flex-col">
-        <Outlet />
-      </div>
+      <TotemShell />
     </CarrinhoProvider>
+  )
+}
+
+function TotemShell() {
+  const { limpar } = useCarrinho()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // não monitora na tela ociosa nem na confirmação (que tem retorno próprio)
+  const monitorar =
+    pathname !== '/totem' && pathname !== '/totem/pedido-realizado'
+
+  const { avisando, segundos } = useInatividade({
+    ativo: monitorar,
+    aoExpirar: () => {
+      limpar()
+      navigate({ to: '/totem' })
+    },
+  })
+
+  return (
+    <div className="totem-root flex flex-col">
+      <Outlet />
+      {avisando && <AvisoInatividade segundos={segundos} />}
+    </div>
   )
 }
