@@ -350,39 +350,69 @@ e vice-versa.
 
 ---
 
-## 7. Pagamento — wrapper Android nativo
+## 7. Pagamento — Moderninha Smart 2 + app nativo, orquestrado pelo backend
 
-O SDK da maquininha PagBank não aceita WebView/PWA puro — só Java/Kotlin nativo. Solução:
+> **Arquitetura v3 (2026-09-01).** Maquininha em mãos: **Moderninha Smart 2** (Android).
+> A PagBank **não permite** WebView/Cordova no app que usa o SDK de pagamento (SmartPOS /
+> `PlugPagServiceWrapper`). Então **não** dá pra rodar o totem dentro da maquininha.
 
-- App Android nativo fino, contendo uma **WebView** que carrega o PWA do totem normalmente
-  (cardápio, carrinho, etc. — tudo igual ao que já foi desenhado).
-- Na tela de pagamento, o cliente escolhe **Pix / Crédito / Débito**. O JavaScript chama uma
-  função exposta pelo nativo (`addJavascriptInterface`) passando **valor + forma escolhida**.
-  O Kotlin/Java aciona o fluxo correspondente no SDK da maquininha e devolve o resultado
-  (aprovado/recusado + id da transação + bandeira) de volta pro JS via callback.
-- Só essa ponte é nativa — o resto do sistema (PDV, Relatórios, Cadastro) continua 100% web.
-- Essa parte só entra em ação quando a maquininha e o terminal de desenvolvimento (DEBUG) da
-  PagBank chegarem — não bloqueia o início do desenvolvimento do resto do sistema.
+**Desenho:**
+- **Totem** = web no **tablet** (permitido; não toca no SDK).
+- **PDV** = web no PC do balcão.
+- **Smart 2** = acoplada ao totem, roda um **app Android nativo fino** (Kotlin) que usa o
+  `PlugPagServiceWrapper`.
+- **O tablet e a Smart 2 não falam direto.** Os dois falam com o **Supabase** (o "correio").
 
-**Contrato da bridge JS ↔ nativo (rascunho a validar com o SDK real):**
-
+**Fluxo:**
 ```
-// JS -> nativo
-AndroidPagamento.iniciarPagamento(JSON.stringify({
-  pedidoId: "uuid",
-  valorCentavos: 4500,
-  forma: "pix" | "cartao_credito" | "cartao_debito"
-}))
-
-// nativo -> JS  (window.onResultadoPagamento)
-{
-  pedidoId: "uuid",
-  status: "aprovado" | "recusado",
-  transacaoId: "string|null",
-  bandeira: "string|null",
-  mensagemErro: "string|null"
-}
+1. Tablet "Pagar" -> server fn criarPedido:
+     pedido.status = 'aguardando_pagamento'
+     pagamentos: status 'pendente', valor, forma
+2. App da Smart 2 -> escuta pagamentos 'pendente' (Realtime) -> pega
+     -> PlugPag.doPayment(valorCentavos, tipo)   [CREDITO=1, DEBITO=2, PIX=5]
+     -> maquininha coloca o valor; cliente aproxima/insere cartão, ou Pix = QR na tela dela
+3. Retorno do SDK -> server fn confirmarPagamento:
+     aprovado -> pagamentos 'aprovado' (+ NSU/bandeira); pedido -> 'em_preparo'
+     recusado -> pagamentos 'recusado'; pedido segue 'aguardando_pagamento' (nova tentativa)
+     -> App da Smart 2 imprime a COMANDA DO CLIENTE na impressora embutida (printFromFile)
+4. Tablet (tela /totem/aguardando-pagamento) faz polling de getStatusPedido:
+     'em_preparo' -> vai pra /totem/pedido-realizado
+     'recusado'   -> oferece tentar de novo / cancelar
+     timeout/cancelar -> cancelarPagamento -> pedido 'cancelado'
+5. PDV recebe pelo Realtime (já funciona). Ticket da COZINHA sai na impressora do PDV.
 ```
+
+**Impressoras:** comanda do cliente = impressora da Smart 2. Ticket da cozinha = 1 impressora
+no PC do PDV (era 2, agora 1).
+
+**Flag `PAGAMENTO_MOCK`** (env, default `true`): ligada, `criarPedido` aprova na hora (fluxo
+de demo). `false` liga o fluxo assíncrono acima. Antes do app da Smart 2 existir, o
+**simulador `/dev/maquininha`** aprova/recusa os pendentes.
+
+### 7.1 App da Smart 2 (SmartPOS / PlugPagServiceWrapper)
+
+- SDK: `br.com.uol.pagseguro.plugpagservice.wrapper` (o "SmartPOS" usa essa lib).
+  Classes: `PlugPag`, `doPayment` (`PlugPagPaymentData`), `Listeners` / `AsyncPlugPag`,
+  `PlugPagActivationData` (ativação), `PlugPagPrinterData` + `printFromFile` (comanda),
+  `PlugPagVoidData` (estorno).
+- **Regras do SDK:** uma única instância de `PlugPag`; chamadas **sempre em background
+  thread** (ANR); nunca disparar pagamento/estorno 2x antes de terminar.
+- App é **nativo Kotlin** (sem WebView). Só faz: escutar Supabase Realtime -> `doPayment`
+  -> `confirmarPagamento` -> `printFromFile`.
+- **Dev:** instala no terminal DEBUG via **ADB**. Base de exemplo: app **"SmartCoffee"** da
+  PagBank. Terminal vem em ambiente de teste; código de ativação vem do time de integração.
+- **Homologação:** cadastro comercial (formulário) -> terminal DEBUG -> desenvolvimento ->
+  enviar **APK Release + vídeo demo** -> revisão de segurança. **SLA 7 dias úteis.**
+- **Endpoints do app (pra homologação):** `https://vzlnzllpvuyhefrkhedu.supabase.co` (REST) e
+  `wss://vzlnzllpvuyhefrkhedu.supabase.co/realtime/v1` (Realtime). AWS sa-east-1.
+
+### 7.2 Contrato Supabase ↔ app da Smart 2
+
+- **Lê:** `pedidos` do estabelecimento com `status = 'aguardando_pagamento'` (via Realtime),
+  join `pagamentos` (`status = 'pendente'`) pra pegar `valor` + `forma_pagamento`.
+- **Escreve (via server fn `confirmarPagamento`, com token do dispositivo):**
+  `{ pedidoId, resultado: 'aprovado'|'recusado', transacaoId, bandeira, formaReal }`.
+- Idempotente: se o pedido já não está `aguardando_pagamento`, ignora.
 
 ---
 
