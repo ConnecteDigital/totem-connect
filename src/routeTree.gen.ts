@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PainelRouteImport } from './routes/_painel'
 import { Route as TotemRouteRouteImport } from './routes/totem/route'
+import { Route as DevMaquininhaRouteImport } from './routes/dev/maquininha'
 import { Route as TotemIndexRouteImport } from './routes/totem/index'
+import { Route as TotemAguardandoPagamentoRouteImport } from './routes/totem/aguardando-pagamento'
 import { Route as TotemCardapioRouteImport } from './routes/totem/cardapio'
 import { Route as TotemEnderecoRouteImport } from './routes/totem/endereco'
 import { Route as TotemIdentificacaoRouteImport } from './routes/totem/identificacao'
@@ -43,11 +45,22 @@ const TotemRouteRoute = TotemRouteRouteImport.update({
   path: '/totem',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevMaquininhaRoute = DevMaquininhaRouteImport.update({
+  id: '/dev/maquininha',
+  path: '/dev/maquininha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TotemIndexRoute = TotemIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => TotemRouteRoute,
 } as any)
+const TotemAguardandoPagamentoRoute =
+  TotemAguardandoPagamentoRouteImport.update({
+    id: '/aguardando-pagamento',
+    path: '/aguardando-pagamento',
+    getParentRoute: () => TotemRouteRoute,
+  } as any)
 const TotemCardapioRoute = TotemCardapioRouteImport.update({
   id: '/cardapio',
   path: '/cardapio',
@@ -127,6 +140,8 @@ const TotemProdutoIdRoute = TotemProdutoIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/totem': typeof TotemRouteRouteWithChildren
+  '/dev/maquininha': typeof DevMaquininhaRoute
+  '/totem/aguardando-pagamento': typeof TotemAguardandoPagamentoRoute
   '/totem/cardapio': typeof TotemCardapioRoute
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
@@ -146,6 +161,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/maquininha': typeof DevMaquininhaRoute
+  '/totem/aguardando-pagamento': typeof TotemAguardandoPagamentoRoute
   '/totem/cardapio': typeof TotemCardapioRoute
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
@@ -168,6 +185,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/totem': typeof TotemRouteRouteWithChildren
   '/_painel': typeof PainelRouteWithChildren
+  '/dev/maquininha': typeof DevMaquininhaRoute
+  '/totem/aguardando-pagamento': typeof TotemAguardandoPagamentoRoute
   '/totem/cardapio': typeof TotemCardapioRoute
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
@@ -190,6 +209,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/totem'
+    | '/dev/maquininha'
+    | '/totem/aguardando-pagamento'
     | '/totem/cardapio'
     | '/totem/endereco'
     | '/totem/identificacao'
@@ -209,6 +230,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dev/maquininha'
+    | '/totem/aguardando-pagamento'
     | '/totem/cardapio'
     | '/totem/endereco'
     | '/totem/identificacao'
@@ -230,6 +253,8 @@ export interface FileRouteTypes {
     | '/'
     | '/totem'
     | '/_painel'
+    | '/dev/maquininha'
+    | '/totem/aguardando-pagamento'
     | '/totem/cardapio'
     | '/totem/endereco'
     | '/totem/identificacao'
@@ -252,6 +277,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TotemRouteRoute: typeof TotemRouteRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
+  DevMaquininhaRoute: typeof DevMaquininhaRoute
   ImprimirComandaIdRoute: typeof ImprimirComandaIdRoute
   ImprimirCozinhaIdRoute: typeof ImprimirCozinhaIdRoute
 }
@@ -279,11 +305,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TotemRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/maquininha': {
+      id: '/dev/maquininha'
+      path: '/dev/maquininha'
+      fullPath: '/dev/maquininha'
+      preLoaderRoute: typeof DevMaquininhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/totem/': {
       id: '/totem/'
       path: '/'
       fullPath: '/totem/'
       preLoaderRoute: typeof TotemIndexRouteImport
+      parentRoute: typeof TotemRouteRoute
+    }
+    '/totem/aguardando-pagamento': {
+      id: '/totem/aguardando-pagamento'
+      path: '/aguardando-pagamento'
+      fullPath: '/totem/aguardando-pagamento'
+      preLoaderRoute: typeof TotemAguardandoPagamentoRouteImport
       parentRoute: typeof TotemRouteRoute
     }
     '/totem/cardapio': {
@@ -395,6 +435,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface TotemRouteRouteChildren {
+  TotemAguardandoPagamentoRoute: typeof TotemAguardandoPagamentoRoute
   TotemCardapioRoute: typeof TotemCardapioRoute
   TotemEnderecoRoute: typeof TotemEnderecoRoute
   TotemIdentificacaoRoute: typeof TotemIdentificacaoRoute
@@ -409,6 +450,7 @@ interface TotemRouteRouteChildren {
 }
 
 const TotemRouteRouteChildren: TotemRouteRouteChildren = {
+  TotemAguardandoPagamentoRoute: TotemAguardandoPagamentoRoute,
   TotemCardapioRoute: TotemCardapioRoute,
   TotemEnderecoRoute: TotemEnderecoRoute,
   TotemIdentificacaoRoute: TotemIdentificacaoRoute,
@@ -445,6 +487,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TotemRouteRoute: TotemRouteRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
+  DevMaquininhaRoute: DevMaquininhaRoute,
   ImprimirComandaIdRoute: ImprimirComandaIdRoute,
   ImprimirCozinhaIdRoute: ImprimirCozinhaIdRoute,
 }

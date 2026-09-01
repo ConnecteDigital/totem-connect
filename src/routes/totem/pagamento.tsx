@@ -44,10 +44,21 @@ function Pagamento() {
 
     try {
       const res = await criarPedido({ data: payload })
-      navigate({
-        to: '/totem/pedido-realizado',
-        search: { numero: res.numeroPedido, id: res.pedidoId },
-      })
+      if (res.aguardandoPagamento) {
+        navigate({
+          to: '/totem/aguardando-pagamento',
+          search: {
+            id: res.pedidoId,
+            numero: res.numeroPedido,
+            valor: carrinho.valorTotal,
+          },
+        })
+      } else {
+        navigate({
+          to: '/totem/pedido-realizado',
+          search: { numero: res.numeroPedido, id: res.pedidoId },
+        })
+      }
     } catch (e) {
       setErro((e as Error).message || 'Não foi possível concluir o pedido.')
       setProcessando(false)

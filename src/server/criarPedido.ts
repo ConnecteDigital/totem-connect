@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { criarSupabaseServidor } from '#/lib/supabase/server'
+import { pagamentoMock } from '#/lib/config'
 import { resolverEstabelecimentoTotem } from '#/server/_comum'
 
 type ItemInput = {
@@ -31,7 +32,12 @@ export type CriarPedidoInput = {
   itens: ItemInput[]
 }
 
-export type CriarPedidoResultado = { pedidoId: string; numeroPedido: number }
+export type CriarPedidoResultado = {
+  pedidoId: string
+  numeroPedido: number
+  /** true = totem deve esperar a maquininha concluir; false = já aprovado (mock) */
+  aguardandoPagamento: boolean
+}
 
 function montarObservacoes(personalizacao: string | null, obs: string): string | null {
   const partes = [
@@ -103,6 +109,8 @@ export const criarPedido = createServerFn({ method: 'POST' })
     if (numRes.error) throw numRes.error
     const numeroPedido = numRes.data as number
 
+    const mock = pagamentoMock()
+    const agora = new Date().toISOString()
     const end = data.modoEntrega === 'entrega' ? data.endereco : null
 
     // ids gerados aqui pra montar tudo antes e inserir em lote (sem depender de ordem de retorno)
@@ -139,14 +147,14 @@ export const criarPedido = createServerFn({ method: 'POST' })
       numero_pedido: numeroPedido,
       tipo_consumo: data.tipoConsumo,
       modo_entrega: data.tipoConsumo === 'para_viagem' ? data.modoEntrega : null,
-      // pago (mock) -> já vai direto pra cozinha
-      status: 'em_preparo',
+      // mock: já vai pra cozinha. real: espera a maquininha confirmar.
+      status: mock ? 'em_preparo' : 'aguardando_pagamento',
       forma_pagamento: data.formaPagamento,
       valor_total: valorTotal,
       nome_cliente: data.nomeCliente || null,
       telefone_cliente: data.telefone || null,
       taxa_entrega: 0,
-      pago_em: new Date().toISOString(),
+      pago_em: mock ? agora : null,
       entrega_cep: end?.cep || null,
       entrega_logradouro: end?.logradouro || null,
       entrega_numero: end?.numero || null,
@@ -168,9 +176,10 @@ export const criarPedido = createServerFn({ method: 'POST' })
     await supa.from('pagamentos').insert({
       pedido_id: pedidoId,
       forma_pagamento: data.formaPagamento,
-      status: 'aprovado',
-      respondido_em: new Date().toISOString(),
+      valor: valorTotal,
+      status: mock ? 'aprovado' : 'pendente',
+      respondido_em: mock ? agora : null,
     })
 
-    return { pedidoId, numeroPedido }
+    return { pedidoId, numeroPedido, aguardandoPagamento: !mock }
   })
