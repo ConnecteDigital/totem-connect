@@ -16,7 +16,7 @@ import {
 
 export const Route = createFileRoute('/_painel/pdv/')({ component: Fila })
 
-const COLUNAS_ATIVAS: StatusPedido[] = ['pago', 'em_preparo', 'pronto']
+const COLUNAS_ATIVAS: StatusPedido[] = ['em_preparo', 'pronto']
 
 function Fila() {
   const { usuario } = useAuth()
@@ -89,9 +89,13 @@ function Fila() {
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {COLUNAS_ATIVAS.map((col) => {
-          const lista = ativos.filter((p) => p.status === col)
+          const lista = ativos.filter((p) =>
+            col === 'em_preparo'
+              ? p.status === 'em_preparo' || p.status === 'pago'
+              : p.status === col,
+          )
           return (
             <Coluna key={col} titulo={ROTULO_STATUS[col]} n={lista.length}>
               {lista.map((p) => (

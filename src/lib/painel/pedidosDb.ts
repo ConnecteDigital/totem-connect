@@ -67,17 +67,20 @@ export async function listarFila(estabelecimentoId: string): Promise<PedidoDb[]>
   return (data ?? []) as unknown as PedidoDb[]
 }
 
-/** Pedidos entregues hoje (histórico do dia no PDV). */
+/** Pedidos entregues hoje (histórico do dia no PDV). Usa entregue_em; cai pro
+ * criado_em em pedidos antigos sem essa marca. */
 export async function listarEntreguesHoje(estabelecimentoId: string): Promise<PedidoDb[]> {
   const inicio = new Date()
   inicio.setHours(0, 0, 0, 0)
+  const iso = inicio.toISOString()
   const { data, error } = await supabase
     .from('pedidos')
     .select(SELECT_PEDIDO)
     .eq('estabelecimento_id', estabelecimentoId)
     .eq('status', 'entregue')
-    .gte('criado_em', inicio.toISOString())
+    .or(`entregue_em.gte.${iso},and(entregue_em.is.null,criado_em.gte.${iso})`)
     .order('numero_pedido', { ascending: false })
+    .limit(30)
   if (error) throw error
   return (data ?? []) as unknown as PedidoDb[]
 }
@@ -120,21 +123,24 @@ export async function buscarPedido(id: string): Promise<PedidoDb | null> {
 }
 
 export async function mudarStatus(id: string, status: StatusPedido) {
+  const agora = new Date().toISOString()
   const patch: Record<string, unknown> = { status }
-  if (status === 'cancelado') patch.cancelado_em = new Date().toISOString()
+  if (status === 'cancelado') patch.cancelado_em = agora
+  if (status === 'entregue') patch.entregue_em = agora
   const { error } = await supabase.from('pedidos').update(patch).eq('id', id)
   if (error) throw error
 }
 
+// pedido pago já entra em 'em_preparo'. 'pago' fica só como legado (avança direto).
 export const PROXIMO_STATUS: Partial<Record<StatusPedido, StatusPedido>> = {
-  pago: 'em_preparo',
+  pago: 'pronto',
   em_preparo: 'pronto',
   pronto: 'entregue',
 }
 
 export const ROTULO_STATUS: Record<StatusPedido, string> = {
   aguardando_pagamento: 'Aguardando pagamento',
-  pago: 'Novo',
+  pago: 'Em preparo',
   em_preparo: 'Em preparo',
   pronto: 'Pronto',
   entregue: 'Entregue',

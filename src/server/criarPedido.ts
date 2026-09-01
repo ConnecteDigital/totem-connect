@@ -139,7 +139,8 @@ export const criarPedido = createServerFn({ method: 'POST' })
       numero_pedido: numeroPedido,
       tipo_consumo: data.tipoConsumo,
       modo_entrega: data.tipoConsumo === 'para_viagem' ? data.modoEntrega : null,
-      status: 'pago',
+      // pago (mock) -> já vai direto pra cozinha
+      status: 'em_preparo',
       forma_pagamento: data.formaPagamento,
       valor_total: valorTotal,
       nome_cliente: data.nomeCliente || null,
