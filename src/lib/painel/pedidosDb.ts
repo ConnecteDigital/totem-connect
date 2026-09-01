@@ -83,7 +83,11 @@ export async function listarEntreguesHoje(estabelecimentoId: string): Promise<Pe
 }
 
 /** Assina mudanças em `pedidos` do estabelecimento via Supabase Realtime. */
-export function assinarPedidos(estabelecimentoId: string, aoMudar: () => void): () => void {
+export function assinarPedidos(
+  estabelecimentoId: string,
+  aoMudar: () => void,
+  aoConectar?: (conectado: boolean) => void,
+): () => void {
   const canal = supabase
     .channel(`pedidos-${estabelecimentoId}`)
     .on(
@@ -96,8 +100,11 @@ export function assinarPedidos(estabelecimentoId: string, aoMudar: () => void): 
       },
       () => aoMudar(),
     )
-    .subscribe()
+    .subscribe((status) => {
+      aoConectar?.(status === 'SUBSCRIBED')
+    })
   return () => {
+    aoConectar?.(false)
     void supabase.removeChannel(canal)
   }
 }

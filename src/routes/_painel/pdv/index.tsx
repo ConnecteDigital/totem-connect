@@ -43,10 +43,11 @@ function Fila() {
     if (!estId) return
     void carregar()
     // Realtime + polling de segurança (caso o socket caia)
-    const desassinar = assinarPedidos(estId, () => {
-      setAoVivo(true)
-      void carregar()
-    })
+    const desassinar = assinarPedidos(
+      estId,
+      () => void carregar(),
+      (conectado) => setAoVivo(conectado),
+    )
     const t = setInterval(carregar, 15000)
     return () => {
       desassinar()
