@@ -1,16 +1,32 @@
 import { createServerFn } from '@tanstack/react-start'
 import { criarSupabaseServidor } from '#/lib/supabase/server'
 import { resolverEstabelecimentoTotem } from '#/server/_comum'
+import { cardapioMockDev } from '#/server/cardapioMockDev'
 import type { CardapioTotem } from '#/lib/tipos'
 
 /**
  * Cardápio para o Totem — roda no servidor (service role, ignora RLS).
  * Descobre o estabelecimento pelo TOTEM_DEVICE_TOKEN (tabela dispositivos).
+ * Em dev, se o Supabase não estiver configurado, cai no mock (nunca em prod).
  */
 export const getCardapioTotem = createServerFn({ method: 'GET' }).handler(
   async (): Promise<CardapioTotem> => {
-    const supa = criarSupabaseServidor()
-    const estabelecimentoId = await resolverEstabelecimentoTotem(supa)
+    try {
+      return await carregarDoBanco()
+    } catch (e) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn('[cardapioTotem] usando mock de dev:', (e as Error).message)
+        return cardapioMockDev
+      }
+      throw e
+    }
+  },
+)
+
+async function carregarDoBanco(): Promise<CardapioTotem> {
+  const supa = criarSupabaseServidor()
+  const estabelecimentoId = await resolverEstabelecimentoTotem(supa)
 
     const [cat, prod] = await Promise.all([
       supa
@@ -57,5 +73,4 @@ export const getCardapioTotem = createServerFn({ method: 'GET' }).handler(
           .map((x) => ({ id: x.id, nome: x.nome, preco: Number(x.preco) })),
       })),
     }
-  },
-)
+}

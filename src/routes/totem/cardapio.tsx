@@ -32,7 +32,7 @@ function Cardapio() {
     <>
       <CabecalhoTotem />
 
-      <div className="flex flex-1 gap-8 px-8 py-6">
+      <div className="flex min-h-0 flex-1 gap-8 px-8 py-6">
         {/* coluna esquerda + centro */}
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-end justify-between gap-6">

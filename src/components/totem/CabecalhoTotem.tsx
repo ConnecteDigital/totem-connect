@@ -23,16 +23,22 @@ export function CabecalhoTotem({ compacto = false }: { compacto?: boolean }) {
   )
 }
 
+/** Mesmo traço do ícone da PWA (public/icons/icon.svg), sem o fundo. */
 export function LogoConnect({ tamanho = 28 }: { tamanho?: number }) {
   return (
-    <svg width={tamanho} height={tamanho} viewBox="0 0 32 32" fill="none" aria-hidden>
+    <svg width={tamanho} height={tamanho} viewBox="0 0 512 512" fill="none" aria-hidden>
       <path
-        d="M23 8a10 10 0 1 0 0 16"
+        d="M360 150a128 128 0 1 0 0 212"
         stroke="#FF6A00"
-        strokeWidth="4"
+        strokeWidth="46"
         strokeLinecap="round"
       />
-      <path d="M17 12a5 5 0 1 0 0 8" stroke="#FF6A00" strokeWidth="4" strokeLinecap="round" />
+      <path
+        d="M300 205a70 70 0 1 0 0 102"
+        stroke="#FF6A00"
+        strokeWidth="46"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }

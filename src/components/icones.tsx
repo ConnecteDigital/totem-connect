@@ -138,6 +138,13 @@ export const IconeSobremesa = (p: P) => (
   </svg>
 )
 
+export const IconeCasa = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 11.5 12 4l8 7.5" />
+    <path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9" />
+  </svg>
+)
+
 export const IconeCombo = (p: P) => (
   <svg {...base(p)}>
     <path d="M3 8a6 6 0 0 1 12 0M2 11h14M4 14h10M20 21V9M20 9c0-2 1-4 1-4s1 2 1 4a1 1 0 0 1-2 0z" />

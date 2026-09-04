@@ -16,7 +16,7 @@ function Revisao() {
   return (
     <>
       <CabecalhoTotem />
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-8 py-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col px-8 py-6">
         <h1 className="text-4xl font-extrabold">Revisão do pedido</h1>
 
         <ul className="mt-6 flex-1 space-y-4 overflow-y-auto">
@@ -63,7 +63,11 @@ function Revisao() {
         </div>
 
         <div className="mt-6 flex gap-4">
-          <Botao variante="secundario" onClick={() => navigate({ to: '/totem/cardapio' })}>
+          <Botao
+            variante="secundario"
+            className="shrink-0 whitespace-nowrap"
+            onClick={() => navigate({ to: '/totem/cardapio' })}
+          >
             + Adicionar mais itens
           </Botao>
           <Botao

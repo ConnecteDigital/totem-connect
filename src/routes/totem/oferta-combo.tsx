@@ -40,7 +40,7 @@ function OfertaCombo() {
   return (
     <>
       <CabecalhoTotem />
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-8 py-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-8 py-6">
         <h1 className="text-4xl font-extrabold">
           Que tal um <span className="text-laranja">combo?</span>
         </h1>

@@ -68,7 +68,7 @@ function DetalheProduto() {
   return (
     <>
       <CabecalhoTotem />
-      <div className="mx-auto grid w-full max-w-5xl flex-1 gap-8 px-8 py-6 md:grid-cols-2">
+      <div className="mx-auto grid w-full max-w-5xl flex-1 gap-8 overflow-y-auto px-8 py-6 md:grid-cols-2">
         <div className="grid aspect-square place-items-center overflow-hidden rounded-card bg-superficie text-[120px]">
           {produto.fotoUrl ? (
             <img src={produto.fotoUrl} alt="" className="h-full w-full object-cover" />

@@ -16,7 +16,7 @@ export function CarrinhoLateral({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        'flex w-[340px] shrink-0 flex-col rounded-card bg-superficie p-5',
+        'flex min-h-0 w-[340px] shrink-0 flex-col rounded-card bg-superficie p-5',
         className,
       )}
     >

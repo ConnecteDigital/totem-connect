@@ -4,7 +4,7 @@ import { CabecalhoTotem } from '#/components/totem/CabecalhoTotem'
 import { CardOpcao } from '#/components/totem/CardOpcao'
 import { CarrinhoLateral } from '#/components/totem/CarrinhoLateral'
 import { RodapeVoltar } from '#/components/totem/RodapeVoltar'
-import { IconeSacola, IconeSeta } from '#/components/icones'
+import { IconeSacola, IconeCasa } from '#/components/icones'
 
 export const Route = createFileRoute('/totem/modo-entrega')({ component: ModoEntregaTela })
 
@@ -20,7 +20,7 @@ function ModoEntregaTela() {
   return (
     <>
       <CabecalhoTotem />
-      <div className="flex flex-1 gap-8 px-8 py-6">
+      <div className="flex min-h-0 flex-1 gap-8 px-8 py-6">
         <div className="flex flex-1 flex-col items-center">
           <h1 className="mt-6 text-center text-5xl font-extrabold leading-tight">
             Como quer <span className="text-laranja">receber?</span>
@@ -35,7 +35,7 @@ function ModoEntregaTela() {
               aoEscolher={() => escolher('retirada')}
             />
             <CardOpcao
-              icone={<IconeSeta width={72} height={72} />}
+              icone={<IconeCasa width={72} height={72} />}
               titulo="Receber em casa"
               descricao="Entrega no meu endereço"
               aoEscolher={() => escolher('entrega')}

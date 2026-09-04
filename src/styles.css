@@ -45,12 +45,13 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Totem: tela cheia, sem seleção de texto acidental, sem scroll horizontal */
+/* Totem: tela cheia fixa (kiosk) — cada tela rola por dentro, nunca a página
+   toda. Sem isso, listas grandes empurram o rodapé (total/pagar) pra fora. */
 .totem-root {
   background: var(--color-preto);
   color: #fff;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100dvh;
+  overflow: hidden;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }

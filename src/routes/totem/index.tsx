@@ -15,7 +15,7 @@ function TelaInicial() {
   }, [limpar])
 
   return (
-    <Link to="/totem/onde-consumir" className="flex min-h-screen flex-col">
+    <Link to="/totem/onde-consumir" className="flex h-full flex-col">
       {/* topo */}
       <div className="flex items-center justify-between px-10 pt-8">
         <div className="flex items-center gap-3">
