@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useCarrinho } from '#/lib/carrinho'
 import { LogoConnect } from '#/components/totem/CabecalhoTotem'
-import { IconeToque, IconeAjuda, IconeGlobo, IconeChevron } from '#/components/icones'
+import { IconeToque } from '#/components/icones'
 
 export const Route = createFileRoute('/totem/')({ component: TelaInicial })
+
+const NOME_ESTABELECIMENTO = 'Hamburgueria Piloto'
 
 function TelaInicial() {
   const { limpar } = useCarrinho()
@@ -16,52 +18,35 @@ function TelaInicial() {
 
   return (
     <Link to="/totem/onde-consumir" className="flex h-full flex-col">
-      {/* topo */}
-      <div className="flex items-center justify-between px-10 pt-8">
-        <div className="flex items-center gap-3">
-          <LogoConnect tamanho={34} />
-          <div className="leading-tight">
-            <div className="text-xl font-bold">Hamburgueria Piloto</div>
-            <div className="text-xs text-white/50">por Connect Digital</div>
-          </div>
-        </div>
-        <span className="flex items-center gap-2 rounded-pill border border-white/20 px-4 py-2 text-sm">
-          <IconeGlobo width={18} height={18} />
-          Português
-          <IconeChevron width={16} height={16} />
-        </span>
+      {/* logo da Connect — pequena, discreta, só marca-d'água */}
+      <div className="px-10 pt-7">
+        <LogoConnect tamanho={26} />
       </div>
 
-      {/* meio */}
-      <div className="grid flex-1 items-center gap-6 px-10 md:grid-cols-2">
-        <div>
-          <h1 className="text-6xl font-extrabold leading-[1.05] tracking-tight">
-            TOQUE PARA
-            <br />
-            <span className="text-laranja">COMEÇAR</span>
-          </h1>
-          <div className="mt-4 h-1 w-24 rounded bg-laranja" />
-          <p className="mt-6 max-w-sm text-xl text-white/70">
-            Faça seu pedido de forma <strong className="text-white">rápida e prática!</strong>
-          </p>
+      {/* meio — tudo centralizado */}
+      <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-laranja" />
+          <span className="text-lg font-bold uppercase tracking-widest text-white/90">
+            {NOME_ESTABELECIMENTO}
+          </span>
         </div>
 
-        <div className="grid aspect-[4/3] w-full place-items-center rounded-card bg-superficie text-[120px]">
-          {/* trocar por imagem real do produto */}
-          🍔
-        </div>
+        <h1 className="mt-6 text-7xl font-extrabold leading-[1.05] tracking-tight">
+          TOQUE PARA
+          <br />
+          <span className="text-laranja">COMEÇAR</span>
+        </h1>
+        <div className="mt-5 h-1 w-24 rounded bg-laranja" />
+        <p className="mt-6 max-w-md text-xl text-white/70">
+          Faça seu pedido de forma <strong className="text-white">rápida e prática!</strong>
+        </p>
       </div>
 
-      {/* faixa inferior — CTA grande */}
-      <div className="px-10 pb-10">
-        <div className="flex w-full items-center justify-center gap-4 rounded-pill bg-laranja px-10 py-7 text-2xl font-extrabold text-white shadow-[0_16px_40px_-12px_rgba(255,106,0,0.7)]">
-          <IconeToque width={34} height={34} />
-          TOQUE PARA COMEÇAR
-        </div>
-        <div className="mt-4 flex items-center gap-2 text-sm text-white/50">
-          <IconeAjuda width={18} height={18} />
-          Precisa de ajuda? Fale com nossa equipe.
-        </div>
+      {/* CTA colado na parte inferior, só cantos de cima arredondados */}
+      <div className="flex items-center justify-center gap-4 rounded-t-[2.5rem] bg-laranja py-9 text-3xl font-extrabold text-white shadow-[0_-16px_40px_-12px_rgba(255,106,0,0.6)]">
+        <IconeToque width={38} height={38} />
+        TOQUE PARA COMEÇAR
       </div>
     </Link>
   )
