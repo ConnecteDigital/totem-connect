@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { AuthProvider, useAuth } from '#/lib/auth'
 import { Login } from './Login'
+import { ControleTotem } from './ControleTotem'
 import { cn } from '#/lib/cn'
 
 /** Envolve /pdv e /relatorios: provê auth, exige login e desenha a navbar. */
@@ -60,12 +61,15 @@ function Gate({ children }: { children: ReactNode }) {
             })}
           </nav>
         </div>
-        <button
-          onClick={sair}
-          className="text-sm text-cinza-texto hover:text-preto"
-        >
-          Sair
-        </button>
+        <div className="flex items-center gap-6">
+          <ControleTotem />
+          <button
+            onClick={sair}
+            className="text-sm text-cinza-texto hover:text-preto"
+          >
+            Sair
+          </button>
+        </div>
       </header>
       <main className="p-6">{children}</main>
     </div>
