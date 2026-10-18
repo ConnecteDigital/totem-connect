@@ -328,25 +328,30 @@ uma linha em `aguardando_pagamento`. Tratamento:
 
 ---
 
-## 6. As duas impressoras térmicas
+## 6. Impressão — senha no totem, ticket na cozinha
 
-| Impressora | Conectada em | Imprime |
-|---|---|---|
-| Impressora 1 | Tablet do totem (USB) | Comanda/senha do cliente |
-| Impressora 2 | Computador do PDV (USB) | Ticket do pedido pra cozinha |
+| Impressora | Conectada em | Imprime | Quem fornece |
+|---|---|---|---|
+| Térmica do totem (Goldensky GS-FJ80H-UB, 80mm, guilhotina automática) | Tablet do totem, **USB** (hub USB-C com passagem de energia, pro tablet seguir carregando) | **Senha/comprovante do cliente** | Connect |
+| Impressora da cozinha | PC do PDV (USB) | Ticket do pedido pra cozinha | **o cliente** (já possui) |
 
-Navegador não acessa impressora térmica ESC/POS diretamente. Solução: **agente de impressão
-local** em cada dispositivo — recebe o comando "imprimir pedido X" via WebSocket local
-(`localhost`) e manda os bytes ESC/POS pra impressora conectada ali. Pode ser um serviço Node
-pequeno (`node-thermal-printer` ou `escpos`), ou testar **WebUSB** direto no navegador do tablet
-antes de decidir pelo agente.
+> **v4 (2026-10):** a senha NÃO sai mais pela impressora embutida da Smart 2 — a bobina dela é
+> de rasgar (sem guilhotina), ruim pra experiência e manutenção. A Smart 2 só cobra.
 
-Cada dispositivo imprime só o que é dele — o totem nunca tenta imprimir na impressora da cozinha
-e vice-versa.
+**Como o totem imprime (sem app nativo):** **WebUSB** direto do Chrome no tablet, mandando bytes
+**ESC/POS**. O Bluetooth dessa impressora é *Classic/SPP* (o navegador não acessa), por isso USB.
 
-- **Reimpressão no PDV:** botão em `DetalhePedido` reenvia o ticket pro agente local do PDV.
-- **Reimpressão no totem:** se o agente/WebUSB retornar erro, a tela `PedidoRealizado` mostra
-  um botão "Imprimir senha novamente".
+- Código: `src/lib/impressora/` — `escpos.ts` (comandos + tabela CP850 p/ acentos),
+  `webusb.ts` (pareamento/envio, reconecta 1x se cair), `comanda.ts` (layout da senha),
+  `config.ts` (ajustes no localStorage).
+- Disparo: a tela `/totem/pedido-realizado` busca o pedido (`getPedidoImpressao`) e imprime
+  sozinha, uma vez por pedido. Se falhar, mostra o número na tela e orienta chamar o atendente.
+- **Configuração (operador):** 5 toques seguidos na logo da tela inicial abrem
+  `/totem/impressora`: parear (o Chrome pede permissão 1x), escolher tabela de
+  caracteres/colunas e **imprimir página de teste**. No Android, marcar "usar por padrão" no
+  aviso de permissão USB.
+- **PDV (cozinha):** segue usando as folhas `/imprimir/*` (`window.print`) com o driver da
+  impressora do cliente. Reimpressão da senha: botão "Imprimir comanda" no PDV.
 
 ---
 
@@ -374,16 +379,16 @@ e vice-versa.
 3. Retorno do SDK -> server fn confirmarPagamento:
      aprovado -> pagamentos 'aprovado' (+ NSU/bandeira); pedido -> 'em_preparo'
      recusado -> pagamentos 'recusado'; pedido segue 'aguardando_pagamento' (nova tentativa)
-     -> App da Smart 2 imprime a COMANDA DO CLIENTE na impressora embutida (printFromFile)
 4. Tablet (tela /totem/aguardando-pagamento) faz polling de getStatusPedido:
      'em_preparo' -> vai pra /totem/pedido-realizado
      'recusado'   -> oferece tentar de novo / cancelar
      timeout/cancelar -> cancelarPagamento -> pedido 'cancelado'
+     'em_preparo' -> o totem imprime a SENHA na impressora USB dele (seção 6)
 5. PDV recebe pelo Realtime (já funciona). Ticket da COZINHA sai na impressora do PDV.
 ```
 
-**Impressoras:** comanda do cliente = impressora da Smart 2. Ticket da cozinha = 1 impressora
-no PC do PDV (era 2, agora 1).
+**Impressoras:** senha do cliente = impressora USB do totem; ticket da cozinha = impressora do
+PDV (do cliente). A Smart 2 não imprime nada. Ver seção 6.
 
 **Flag `PAGAMENTO_MOCK`** (env, default `true`): ligada, `criarPedido` aprova na hora (fluxo
 de demo). `false` liga o fluxo assíncrono acima. Antes do app da Smart 2 existir, o
@@ -393,12 +398,11 @@ de demo). `false` liga o fluxo assíncrono acima. Antes do app da Smart 2 existi
 
 - SDK: `br.com.uol.pagseguro.plugpagservice.wrapper` (o "SmartPOS" usa essa lib).
   Classes: `PlugPag`, `doPayment` (`PlugPagPaymentData`), `Listeners` / `AsyncPlugPag`,
-  `PlugPagActivationData` (ativação), `PlugPagPrinterData` + `printFromFile` (comanda),
-  `PlugPagVoidData` (estorno).
+  `PlugPagActivationData` (ativação), `PlugPagVoidData` (estorno).
 - **Regras do SDK:** uma única instância de `PlugPag`; chamadas **sempre em background
   thread** (ANR); nunca disparar pagamento/estorno 2x antes de terminar.
 - App é **nativo Kotlin** (sem WebView). Só faz: escutar Supabase Realtime -> `doPayment`
-  -> `confirmarPagamento` -> `printFromFile`.
+  -> `confirmarPagamento`. (Sem impressão: a senha sai no totem.)
 - **Dev:** instala no terminal DEBUG via **ADB**. Base de exemplo: app **"SmartCoffee"** da
   PagBank. Terminal vem em ambiente de teste; código de ativação vem do time de integração.
 - **Homologação:** cadastro comercial (formulário) -> terminal DEBUG -> desenvolvimento ->
