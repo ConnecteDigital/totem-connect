@@ -1,7 +1,6 @@
-import { formatarBRL } from '#/lib/formato'
+import { formatarBRL, nomeAdicional } from '#/lib/formato'
 import type { PedidoDb } from '#/lib/painel/pedidosDb'
-
-const NOME_ESTABELECIMENTO = 'Hamburgueria Piloto'
+import { NOME_ESTABELECIMENTO } from '#/lib/marca'
 
 function dataHora(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -45,7 +44,7 @@ export function ComandaCliente({ pedido }: { pedido: PedidoDb }) {
             <span>{formatarBRL(it.preco_unitario * it.quantidade)}</span>
           </div>
           {it.pedido_item_adicionais.map((a) => (
-            <div key={a.id}>&nbsp;&nbsp;+ {a.adicional_nome}</div>
+            <div key={a.id}>&nbsp;&nbsp;+ {nomeAdicional(a.adicional_nome)}</div>
           ))}
         </div>
       ))}
@@ -79,7 +78,7 @@ export function TicketCozinha({ pedido }: { pedido: PedidoDb }) {
             {it.quantidade}x {it.produto_nome}
           </div>
           {it.pedido_item_adicionais.map((a) => (
-            <div key={a.id}>&nbsp;&nbsp;+ {a.adicional_nome}</div>
+            <div key={a.id}>&nbsp;&nbsp;+ {nomeAdicional(a.adicional_nome)}</div>
           ))}
           {it.observacoes && <div>&nbsp;&nbsp;* {it.observacoes}</div>}
         </div>

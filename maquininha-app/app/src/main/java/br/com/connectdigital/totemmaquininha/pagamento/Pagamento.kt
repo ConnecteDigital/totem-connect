@@ -14,6 +14,8 @@ data class ResultadoPagamento(
  *  - [PagamentoSimulado]  -> roda em qualquer aparelho, sem SDK (testes)
  *  - [PagamentoPlugPag]   -> usa o PlugPagServiceWrapper na Moderninha Smart 2
  *
+ * A senha/comanda do cliente NÃO sai aqui: é impressa pelo próprio totem (impressora USB).
+ *
  * Regras do SDK PagBank já refletidas aqui:
  *  - uma única instância viva por processo (a impl guarda o PlugPag como singleton)
  *  - TODAS as chamadas devem rodar em background (o chamador usa Dispatchers.IO)
@@ -27,9 +29,6 @@ interface Pagamento {
 
     /** Executa a cobrança. Bloqueante até o cliente concluir na maquininha. */
     suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento
-
-    /** Imprime a comanda do cliente na impressora embutida da maquininha. */
-    suspend fun imprimirComanda(texto: String)
 
     /** Aborta uma cobrança em andamento (ex: timeout do totem). */
     fun abortar()

@@ -1,15 +1,28 @@
-import { useEffect } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCarrinho } from '#/lib/carrinho'
 import { LogoConnect } from '#/components/totem/CabecalhoTotem'
 import { IconeToque } from '#/components/icones'
+import { NOME_ESTABELECIMENTO } from '#/lib/marca'
 
 export const Route = createFileRoute('/totem/')({ component: TelaInicial })
 
-const NOME_ESTABELECIMENTO = 'Hamburgueria Piloto'
-
 function TelaInicial() {
   const { limpar } = useCarrinho()
+  const navigate = useNavigate()
+  const toques = useRef<number[]>([])
+
+  // Acesso do operador: 5 toques seguidos na logo abrem a config da impressora.
+  function toqueNaLogo(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const agora = Date.now()
+    toques.current = [...toques.current.filter((t) => agora - t < 4000), agora]
+    if (toques.current.length >= 5) {
+      toques.current = []
+      navigate({ to: '/totem/impressora' })
+    }
+  }
 
   // sessão nova a cada vez que volta pra tela ociosa
   useEffect(() => {
@@ -19,8 +32,10 @@ function TelaInicial() {
   return (
     <Link to="/totem/onde-consumir" className="flex h-full flex-col">
       {/* logo da Connect — pequena, discreta, só marca-d'água */}
-      <div className="px-10 pt-7">
-        <LogoConnect tamanho={26} />
+      <div className="px-7 pt-4">
+        <span role="button" aria-label="Logo" onClick={toqueNaLogo} className="inline-block p-3">
+          <LogoConnect tamanho={26} />
+        </span>
       </div>
 
       {/* meio — tudo centralizado */}

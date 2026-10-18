@@ -21,10 +21,6 @@ class PagamentoSimulado : Pagamento {
         )
     }
 
-    override suspend fun imprimirComanda(texto: String) {
-        Log.i(TAG, "imprimirComanda() simulado:\n$texto")
-    }
-
     override fun abortar() {
         Log.i(TAG, "abortar() simulado")
     }

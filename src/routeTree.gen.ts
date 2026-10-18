@@ -18,6 +18,7 @@ import { Route as TotemAguardandoPagamentoRouteImport } from './routes/totem/agu
 import { Route as TotemCardapioRouteImport } from './routes/totem/cardapio'
 import { Route as TotemEnderecoRouteImport } from './routes/totem/endereco'
 import { Route as TotemIdentificacaoRouteImport } from './routes/totem/identificacao'
+import { Route as TotemImpressoraRouteImport } from './routes/totem/impressora'
 import { Route as TotemModoEntregaRouteImport } from './routes/totem/modo-entrega'
 import { Route as TotemOfertaComboRouteImport } from './routes/totem/oferta-combo'
 import { Route as TotemOndeConsumirRouteImport } from './routes/totem/onde-consumir'
@@ -76,6 +77,11 @@ const TotemEnderecoRoute = TotemEnderecoRouteImport.update({
 const TotemIdentificacaoRoute = TotemIdentificacaoRouteImport.update({
   id: '/identificacao',
   path: '/identificacao',
+  getParentRoute: () => TotemRouteRoute,
+} as any)
+const TotemImpressoraRoute = TotemImpressoraRouteImport.update({
+  id: '/impressora',
+  path: '/impressora',
   getParentRoute: () => TotemRouteRoute,
 } as any)
 const TotemModoEntregaRoute = TotemModoEntregaRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/totem/cardapio': typeof TotemCardapioRoute
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
+  '/totem/impressora': typeof TotemImpressoraRoute
   '/totem/modo-entrega': typeof TotemModoEntregaRoute
   '/totem/oferta-combo': typeof TotemOfertaComboRoute
   '/totem/onde-consumir': typeof TotemOndeConsumirRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/totem/cardapio': typeof TotemCardapioRoute
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
+  '/totem/impressora': typeof TotemImpressoraRoute
   '/totem/modo-entrega': typeof TotemModoEntregaRoute
   '/totem/oferta-combo': typeof TotemOfertaComboRoute
   '/totem/onde-consumir': typeof TotemOndeConsumirRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/totem/cardapio': typeof TotemCardapioRoute
   '/totem/endereco': typeof TotemEnderecoRoute
   '/totem/identificacao': typeof TotemIdentificacaoRoute
+  '/totem/impressora': typeof TotemImpressoraRoute
   '/totem/modo-entrega': typeof TotemModoEntregaRoute
   '/totem/oferta-combo': typeof TotemOfertaComboRoute
   '/totem/onde-consumir': typeof TotemOndeConsumirRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/totem/cardapio'
     | '/totem/endereco'
     | '/totem/identificacao'
+    | '/totem/impressora'
     | '/totem/modo-entrega'
     | '/totem/oferta-combo'
     | '/totem/onde-consumir'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/totem/cardapio'
     | '/totem/endereco'
     | '/totem/identificacao'
+    | '/totem/impressora'
     | '/totem/modo-entrega'
     | '/totem/oferta-combo'
     | '/totem/onde-consumir'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/totem/cardapio'
     | '/totem/endereco'
     | '/totem/identificacao'
+    | '/totem/impressora'
     | '/totem/modo-entrega'
     | '/totem/oferta-combo'
     | '/totem/onde-consumir'
@@ -371,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/identificacao'
       fullPath: '/totem/identificacao'
       preLoaderRoute: typeof TotemIdentificacaoRouteImport
+      parentRoute: typeof TotemRouteRoute
+    }
+    '/totem/impressora': {
+      id: '/totem/impressora'
+      path: '/impressora'
+      fullPath: '/totem/impressora'
+      preLoaderRoute: typeof TotemImpressoraRouteImport
       parentRoute: typeof TotemRouteRoute
     }
     '/totem/modo-entrega': {
@@ -479,6 +498,7 @@ interface TotemRouteRouteChildren {
   TotemCardapioRoute: typeof TotemCardapioRoute
   TotemEnderecoRoute: typeof TotemEnderecoRoute
   TotemIdentificacaoRoute: typeof TotemIdentificacaoRoute
+  TotemImpressoraRoute: typeof TotemImpressoraRoute
   TotemModoEntregaRoute: typeof TotemModoEntregaRoute
   TotemOfertaComboRoute: typeof TotemOfertaComboRoute
   TotemOndeConsumirRoute: typeof TotemOndeConsumirRoute
@@ -494,6 +514,7 @@ const TotemRouteRouteChildren: TotemRouteRouteChildren = {
   TotemCardapioRoute: TotemCardapioRoute,
   TotemEnderecoRoute: TotemEnderecoRoute,
   TotemIdentificacaoRoute: TotemIdentificacaoRoute,
+  TotemImpressoraRoute: TotemImpressoraRoute,
   TotemModoEntregaRoute: TotemModoEntregaRoute,
   TotemOfertaComboRoute: TotemOfertaComboRoute,
   TotemOndeConsumirRoute: TotemOndeConsumirRoute,

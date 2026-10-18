@@ -38,7 +38,7 @@ function Aguardando() {
         const s = await getStatusPedido({ data: { id } })
         if (s.status === 'em_preparo' || s.status === 'pronto') {
           feito.current = true
-          navigate({ to: '/totem/pedido-realizado', search: { numero } })
+          navigate({ to: '/totem/pedido-realizado', search: { numero, id } })
         } else if (s.status === 'cancelado') {
           feito.current = true
           navigate({ to: '/totem' })

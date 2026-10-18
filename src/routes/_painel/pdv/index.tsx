@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '#/lib/auth'
-import { formatarBRL } from '#/lib/formato'
+import { formatarBRL, nomeAdicional } from '#/lib/formato'
 import { cn } from '#/lib/cn'
 import {
   PROXIMO_STATUS,
@@ -250,7 +250,7 @@ function DetalhePedido({
               </div>
               {it.pedido_item_adicionais.map((a) => (
                 <div key={a.id} className="pl-4 text-xs text-cinza-texto">
-                  + {a.adicional_nome}
+                  + {nomeAdicional(a.adicional_nome)}
                 </div>
               ))}
               {it.observacoes && (

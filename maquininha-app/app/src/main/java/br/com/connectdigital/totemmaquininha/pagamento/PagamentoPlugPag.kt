@@ -13,9 +13,9 @@ import android.util.Log
  *    - app de exemplo "SmartCoffee" da PagBank
  *    - https://github.com/pagseguro/pagseguro-sdk-plugpagservicewrapper
  *    Classes esperadas: PlugPag, PlugPagActivationData, PlugPagPaymentData,
- *      PlugPagPrinterData, PlugPagPrintResult, PlugPagTransactionResult
+ *      PlugPagTransactionResult
  *    Métodos: initializeAndActivatePinpad(activationData), doPayment(paymentData),
- *      printFromFile(printerData) ou print(...), abort()
+ *      abort()
  *    Constantes de tipo (confirmar no SDK):
  *      TYPE_CREDITO = 1, TYPE_DEBITO = 2, TYPE_VOUCHER = 3, TYPE_PIX = 5
  *    Constantes de parcela: INSTALLMENT_TYPE_A_VISTA = 1
@@ -65,7 +65,7 @@ class PagamentoPlugPag(
         //     installmentType = PlugPag.INSTALLMENT_TYPE_A_VISTA,
         //     installments = 1,
         //     userReference = "TOTEM",
-        //     printReceipt = false,   // a comanda a gente imprime depois, com layout próprio
+        //     printReceipt = false,   // senha sai na impressora do totem. CONFIRMAR com a PagBank se exigem o comprovante do terminal
         // )
         // val res: PlugPagTransactionResult = (plugpag as PlugPag).doPayment(pagamento)
         // return ResultadoPagamento(
@@ -75,14 +75,6 @@ class PagamentoPlugPag(
         //     mensagem = res.message,
         // )
         throw NotImplementedError("PagamentoPlugPag.cobrar — integrar o SDK PagBank")
-    }
-
-    override suspend fun imprimirComanda(texto: String) {
-        // Opção 1: gerar um bitmap/arquivo do texto e usar printFromFile(PlugPagPrinterData(path, ...))
-        // Opção 2: usar a API de impressão de texto do wrapper, se disponível
-        // val printer = PlugPagPrinterData(filePath = arquivoDoTexto(texto), printerQuality = 4, step = 0)
-        // (plugpag as PlugPag).printFromFile(printer)
-        throw NotImplementedError("PagamentoPlugPag.imprimirComanda — integrar impressão do SDK")
     }
 
     override fun abortar() {

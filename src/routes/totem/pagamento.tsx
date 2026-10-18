@@ -56,7 +56,7 @@ function Pagamento() {
       } else {
         navigate({
           to: '/totem/pedido-realizado',
-          search: { numero: res.numeroPedido },
+          search: { numero: res.numeroPedido, id: res.pedidoId },
         })
       }
     } catch (e) {

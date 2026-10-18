@@ -5,7 +5,7 @@ App Android nativo (Kotlin) que roda **na maquininha**. Ele:
 1. escuta o backend (`/api/maquininha/pendentes`) por pedidos aguardando pagamento
 2. dispara a cobrança no SDK da PagBank (`PlugPagServiceWrapper`)
 3. reporta o resultado (`/api/maquininha/confirmar`)
-4. imprime a comanda do cliente na impressora embutida
+(a senha do cliente NÃO sai aqui — é impressa pela impressora USB do totem)
 
 O totem (tablet) e a maquininha **não falam direto** — os dois falam com o backend.
 
@@ -71,8 +71,7 @@ Depois de aprovado no Contato Comercial e com o terminal DEBUG em mãos:
 ```
 app/src/main/java/br/com/connectdigital/totemmaquininha/
   MainActivity.kt          UI (status: aguardando / cobrando / aprovado / recusado)
-  Orquestrador.kt          laço: pendentes -> cobrar -> confirmar -> imprimir
-  Comanda.kt               monta o texto da comanda
+  Orquestrador.kt          laço: pendentes -> cobrar -> confirmar
   backend/Backend.kt       HTTP pro backend (polling; trocável por Realtime)
   pagamento/Pagamento.kt   interface + tipos
   pagamento/PagamentoSimulado.kt   impl fake (qualquer aparelho)

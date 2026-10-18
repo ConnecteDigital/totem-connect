@@ -27,7 +27,7 @@ sealed class Estado {
 
 /**
  * Laço principal: procura pedido pendente -> cobra na maquininha -> reporta ao
- * backend -> imprime a comanda. Serializado por Mutex (nunca 2 cobranças juntas).
+ * backend. (A senha do cliente é impressa pelo totem, não aqui.) Serializado por Mutex (nunca 2 cobranças juntas).
  */
 class Orquestrador(
     private val backend: Backend,
@@ -85,13 +85,6 @@ class Orquestrador(
         reportar(pedido, res.aprovado, res.transacaoId, res.bandeira)
 
         if (res.aprovado) {
-            try {
-                withContext(Dispatchers.IO) {
-                    pagamento.imprimirComanda(Comanda.montar(pedido))
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "impressão falhou: ${e.message}")
-            }
             _estado.value = Estado.Aprovado(pedido.numeroPedido)
         } else {
             // recusado: libera pra nova tentativa
