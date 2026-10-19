@@ -12,6 +12,7 @@ export function ControleTotem() {
   const [estado, setEstado] = useState<EstadoTotem | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState(false)
+  const [carregado, setCarregado] = useState(false)
 
   useEffect(() => {
     let vivo = true
@@ -21,9 +22,13 @@ export function ControleTotem() {
         if (vivo) {
           setEstado(e)
           setErro(false)
+          setCarregado(true)
         }
       } catch {
-        if (vivo) setErro(true)
+        if (vivo) {
+          setErro(true)
+          setCarregado(true)
+        }
       }
     }
     void ler()
@@ -34,7 +39,14 @@ export function ControleTotem() {
     }
   }, [])
 
-  if (!estado) return null
+  if (!carregado) return null
+  if (!estado) {
+    return (
+      <span className="text-sm text-cinza-texto">
+        {erro ? 'Totem: erro ao consultar' : 'Totem: nenhum dispositivo cadastrado'}
+      </span>
+    )
+  }
 
   const online = totemOnline(estado)
   const desejada = estado.tela_desejada
