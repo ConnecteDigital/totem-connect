@@ -16,7 +16,7 @@ export const Route = createFileRoute('/totem')({
     <div className="totem-root grid min-h-screen place-items-center px-8 text-center text-white/70">
       <div>
         <p className="text-xl font-bold text-white">Não foi possível carregar o cardápio</p>
-        <p className="mt-2 text-sm">{error.message}</p>
+        <p className="mt-2 text-sm">{error instanceof Error ? error.message : String(error)}</p>
       </div>
     </div>
   ),
