@@ -84,7 +84,7 @@ function Fila() {
               aoVivo ? 'bg-green-500' : 'bg-cinza-medio',
             )}
           />
-          {ativos.length} ativo{ativos.length === 1 ? '' : 's'} ·{' '}
+          {ativos.length} pedido{ativos.length === 1 ? '' : 's'} ativo{ativos.length === 1 ? '' : 's'} ·{' '}
           {aoVivo ? 'ao vivo' : 'atualizando'}
         </span>
       </div>
