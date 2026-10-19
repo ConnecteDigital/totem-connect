@@ -34,6 +34,14 @@ maquininha-app/app/build/
 maquininha-app/local.properties
 maquininha-app/.idea/
 maquininha-app/captures/
+
+# app Android de quiosque do tablet (totem-tablet/)
+totem-tablet/.gradle/
+totem-tablet/build/
+totem-tablet/app/build/
+totem-tablet/local.properties
+totem-tablet/.idea/
+totem-tablet/captures/
 *.apk
 *.aab
 *.keystore

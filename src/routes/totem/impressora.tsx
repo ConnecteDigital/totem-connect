@@ -65,6 +65,15 @@ function ConfigImpressora() {
     }
   }
 
+  // Só existe dentro do app de quiosque do tablet (totem-tablet/)
+  const [tabletNativo, setTabletNativo] = useState<{ versao: string } | null>(null)
+  useEffect(() => {
+    const n = (window as unknown as { TotemNativo?: { versao(): string } }).TotemNativo
+    if (n) setTabletNativo({ versao: n.versao() })
+  }, [])
+  const abrirAjustesTablet = () =>
+    (window as unknown as { TotemNativo?: { abrirConfig(): void } }).TotemNativo?.abrirConfig()
+
   return (
     <div className="flex-1 overflow-y-auto px-8 py-8">
       <div className="mx-auto w-full max-w-2xl">
@@ -126,6 +135,14 @@ function ConfigImpressora() {
           <p className={'mt-5 text-lg ' + (aviso.tipo === 'ok' ? 'text-green-400' : 'text-red-400')}>
             {aviso.texto}
           </p>
+        )}
+
+        {tabletNativo && (
+          <div className="mt-6">
+            <Botao variante="secundario" onClick={abrirAjustesTablet}>
+              Ajustes do tablet (app v{tabletNativo.versao})
+            </Botao>
+          </div>
         )}
 
         <div className="mt-10">
