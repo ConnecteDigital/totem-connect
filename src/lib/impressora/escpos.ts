@@ -110,6 +110,31 @@ export class EscPos {
     return this
   }
 
+  /** Impressão invertida: letra branca no fundo preto (GS B n). */
+  inverso(ligado: boolean): this {
+    this.buf.push(GS, 0x42, ligado ? 1 : 0)
+    return this
+  }
+
+  /**
+   * Faixa preta de largura total com o texto centralizado em branco (como a senha das notas de
+   * lanchonete). `largura`/`altura`: multiplicadores do tamanho do caractere.
+   */
+  faixa(texto: string, largura = 1, altura = 1): this {
+    const cap = Math.floor(this.colunas / largura)
+    const t = texto.length > cap ? texto.slice(0, cap) : texto
+    const esq = Math.floor((cap - t.length) / 2)
+    const cheia = ' '.repeat(esq) + t + ' '.repeat(cap - t.length - esq)
+    return this.alinhar('esquerda')
+      .negrito(true)
+      .tamanho(largura, altura)
+      .inverso(true)
+      .linha(cheia)
+      .inverso(false)
+      .tamanho(1, 1)
+      .negrito(false)
+  }
+
   /** Escreve texto SEM quebra de linha. */
   texto(t: string): this {
     this.buf.push(...codificarTexto(t, this.pagina))
@@ -130,8 +155,8 @@ export class EscPos {
     return this.linha(ch.repeat(this.colunas))
   }
 
-  /** Esquerda + direita na mesma linha; quebra a esquerda se for comprida. */
-  /** `largura`: colunas disponíveis (use metade das colunas quando o texto estiver em largura 2x). */
+  /** Esquerda + direita na mesma linha; quebra a esquerda se for comprida.
+   *  `largura`: colunas disponíveis (use metade das colunas quando o texto estiver em largura 2x). */
   duasColunas(esq: string, dir: string, largura = this.colunas): this {
     const recuo = esq.match(/^\s*/)![0] // mantém o recuo (ex: "   + Bacon")
     const espaco = largura - dir.length - 1 - recuo.length
@@ -144,6 +169,27 @@ export class EscPos {
         this.linha(txt)
       }
     })
+    return this
+  }
+
+  /** QR code nativo da impressora (GS ( k). `modulo`: pontos por módulo (1..16), 5 ≈ 2 cm. */
+  qr(dados: string, modulo = 5, correcao: 'L' | 'M' | 'Q' | 'H' = 'M'): this {
+    const bytes = new TextEncoder().encode(dados)
+    const nivel = { L: 48, M: 49, Q: 50, H: 51 }[correcao]
+    const n = bytes.length + 3
+    this.buf.push(GS, 0x28, 0x6b, 4, 0, 49, 65, 50, 0) // modelo 2
+    this.buf.push(GS, 0x28, 0x6b, 3, 0, 49, 67, Math.min(Math.max(modulo, 1), 16)) // tamanho
+    this.buf.push(GS, 0x28, 0x6b, 3, 0, 49, 69, nivel) // correção de erro
+    this.buf.push(GS, 0x28, 0x6b, n & 0xff, n >> 8, 49, 80, 48)
+    for (const b of bytes) this.buf.push(b) // dados
+    this.buf.push(GS, 0x28, 0x6b, 3, 0, 49, 81, 48) // imprime
+    return this.quebrar()
+  }
+
+  /** Imagem de 1 bit (GS v 0): `dados` = bytesPorLinha*altura bytes, bit 1 = ponto preto. */
+  imagem(dados: Uint8Array, bytesPorLinha: number, altura: number): this {
+    this.buf.push(GS, 0x76, 0x30, 0, bytesPorLinha & 0xff, bytesPorLinha >> 8, altura & 0xff, altura >> 8)
+    for (const b of dados) this.buf.push(b)
     return this
   }
 

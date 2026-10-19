@@ -1,7 +1,8 @@
 import type { PedidoDb } from '#/lib/painel/pedidosDb'
 import { formatarBRL, nomeAdicional } from '#/lib/formato'
-import { NOME_ESTABELECIMENTO } from '#/lib/marca'
-import { EscPos } from './escpos'
+import { CONNECT_DIVULGACAO, NOME_ESTABELECIMENTO } from '#/lib/marca'
+import { LOGO_CONNECT } from './logoConnect'
+import { EscPos, quebrarPalavras } from './escpos'
 import type { ConfigImpressora } from './config'
 
 const FORMA_PAGAMENTO: Record<string, string> = {
@@ -36,30 +37,37 @@ export function montarComanda(p: PedidoDb, cfg: ConfigImpressora): Uint8Array {
     .tamanho(1, 1)
     .negrito(false)
     .linha('Comprovante do pedido')
-    .separador()
+    .quebrar()
     .linha('SENHA')
-    .negrito(true)
-    .tamanho(4, 4)
-    .linha(`#${p.numero_pedido}`)
-    .tamanho(1, 1)
+    .faixa(`#${p.numero_pedido}`, 4, 4)
 
-  if (p.nome_cliente) e.tamanho(2, 2).linha(p.nome_cliente).tamanho(1, 1)
-  e.negrito(false).separador()
+  if (p.nome_cliente) {
+    const nome = p.nome_cliente.toUpperCase()
+    e.alinhar('centro').quebrar().linha('VOCÊ SERÁ CHAMADO POR:')
+    e.faixa(nome, nome.length <= cfg.colunas / 2 ? 2 : 1, 2)
+  }
 
-  e.alinhar('esquerda').linha(rotuloConsumo(p)).linha(dataHora(p.criado_em)).separador()
+  e.quebrar().faixa(rotuloConsumo(p), 1, 2)
+
+  e.alinhar('esquerda').quebrar().linha(dataHora(p.criado_em)).separador()
 
   for (const it of p.pedido_itens) {
     e.duasColunas(`${it.quantidade}x ${it.produto_nome}`, formatarBRL(it.preco_unitario * it.quantidade))
     for (const a of it.pedido_item_adicionais) {
       e.duasColunas(`   + ${nomeAdicional(a.adicional_nome)}`, formatarBRL(a.adicional_preco * it.quantidade))
     }
-    if (it.observacoes) e.linha(`   * ${it.observacoes}`)
+    if (it.observacoes) {
+      // quebra por palavra, com recuo (nada de cortar "passado" no meio)
+      quebrarPalavras(it.observacoes, cfg.colunas - 5).forEach((t, i) =>
+        e.linha((i === 0 ? '   * ' : '     ') + t),
+      )
+    }
   }
 
   e.separador()
     .negrito(true)
     .tamanho(2, 2)
-    .duasColunas('TOTAL', formatarBRL(p.valor_total), 24)
+    .duasColunas('TOTAL', formatarBRL(p.valor_total), cfg.colunas / 2)
     .tamanho(1, 1)
     .negrito(false)
 
@@ -71,10 +79,27 @@ export function montarComanda(p: PedidoDb, cfg: ConfigImpressora): Uint8Array {
     .alinhar('centro')
     .linha('Obrigado!')
     .linha('Guarde este comprovante.')
-    .quebrar(4)
-    .cortar()
+
+  if (cfg.divulgacao !== false) divulgacaoConnect(e)
+
+  e.quebrar(4).cortar()
 
   return e.bytes()
+}
+
+/** Rodapé de divulgação: logo da Connect + QR code pro Instagram. */
+function divulgacaoConnect(e: EscPos) {
+  const logo = Uint8Array.from(atob(LOGO_CONNECT.base64), (c) => c.charCodeAt(0))
+  e.quebrar()
+    .alinhar('centro')
+    .imagem(logo, LOGO_CONNECT.bytesPorLinha, LOGO_CONNECT.altura)
+    .negrito(true)
+    .linha(`Projeto criado pela ${CONNECT_DIVULGACAO.nome}`)
+    .negrito(false)
+    .linha('Quer um totem assim no seu negócio?')
+    .quebrar()
+    .qr(CONNECT_DIVULGACAO.instagramUrl, 5)
+    .linha(`Siga a gente: ${CONNECT_DIVULGACAO.instagramRotulo}`)
 }
 
 /** Página de teste: confere acentos, largura da linha e o corte. */

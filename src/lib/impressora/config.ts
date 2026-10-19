@@ -6,6 +6,8 @@ export type ConfigImpressora = {
   pagina: PaginaCodigo
   /** caracteres por linha: 48 (80mm, fonte A) é o padrão */
   colunas: number
+  /** imprime o rodapé de divulgação da Connect (logo + QR). Padrão: ligado. */
+  divulgacao?: boolean
   /** dispositivo USB pareado */
   vendorId?: number
   productId?: number
