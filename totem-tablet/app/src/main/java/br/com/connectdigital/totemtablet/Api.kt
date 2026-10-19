@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 object Api {
     private val http = OkHttpClient.Builder()
         .connectTimeout(6, TimeUnit.SECONDS)
-        .callTimeout(10, TimeUnit.SECONDS)
+        .callTimeout(20, TimeUnit.SECONDS)
         .build()
 
     /**
@@ -24,6 +24,7 @@ object Api {
             .put("carregando", carregando)
             .put("tela", tela)
             .put("versao", BuildConfig.VERSION_NAME)
+            .put("aguardar", true) // long-poll: o servidor responde assim que o PDV mudar o pedido
         val req = Request.Builder()
             .url("${BuildConfig.BASE_URL}/api/totem/estado")
             .header("x-device-token", BuildConfig.DEVICE_TOKEN)

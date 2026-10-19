@@ -22,7 +22,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Serviço em primeiro plano. A cada 10s:
+ * Serviço em primeiro plano, em laço contínuo (cada chamada segura até ~8s no servidor):
  *  - manda bateria + estado da tela pro backend (o PDV mostra online/bateria)
  *  - recebe do backend se a tela deve estar ligada/desligada e aplica
  */
@@ -30,6 +30,7 @@ class ControleService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var laco: Job? = null
     private var acordando: PowerManager.WakeLock? = null
+    @Volatile private var falhou = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -49,7 +50,8 @@ class ControleService : Service() {
                     } catch (e: Exception) {
                         Log.w(TAG, "ciclo: ${e.message}")
                     }
-                    delay(INTERVALO_MS)
+                    // sem internet: tenta de novo em 5s; com internet a própria chamada já espera
+                    delay(if (falhou) 5_000L else 500L)
                 }
             }
         }
@@ -61,7 +63,11 @@ class ControleService : Service() {
         val ligada = pm.isInteractive
         val (pct, carregando) = bateria()
         val desejada = Api.enviarEstado(pct, carregando, if (ligada) "ligada" else "desligada")
-            ?: return
+        if (desejada == null) {
+            falhou = true
+            return
+        }
+        falhou = false
 
         when {
             desejada == "desligada" && ligada -> apagarTela()
@@ -131,6 +137,5 @@ class ControleService : Service() {
         const val TAG = "ControleService"
         const val CANAL = "totem_controle"
         const val ID_NOTIF = 1
-        const val INTERVALO_MS = 10_000L
     }
 }

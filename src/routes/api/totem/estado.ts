@@ -7,7 +7,8 @@ import { criarSupabaseServidor } from '#/lib/supabase/server'
  * Body:   { bateria?: number, carregando?: boolean, tela?: 'ligada'|'desligada', versao?: string }
  *
  * Chamado pelo app de quiosque do tablet a cada ~10s: registra o sinal de vida
- * e devolve o estado de tela que o PDV pediu.
+ * e devolve o estado de tela que o PDV pediu. Com aguardar:true segura a resposta até o
+ * PDV mudar (long-poll de até ~8s).
  */
 export const Route = createFileRoute('/api/totem/estado')({
   server: {
@@ -22,6 +23,7 @@ export const Route = createFileRoute('/api/totem/estado')({
             carregando?: boolean
             tela?: string
             versao?: string
+            aguardar?: boolean
           }
 
           const supa = criarSupabaseServidor()
@@ -43,7 +45,23 @@ export const Route = createFileRoute('/api/totem/estado')({
           if (error) throw error
           if (!data) throw new Error('device token inválido')
 
-          return Response.json({ telaDesejada: data.tela_desejada })
+          // Long-poll: se o tablet pediu pra aguardar e a tela já está como o PDV quer, segura a
+          // resposta até o PDV mudar o pedido (ou ~8s), pra o comando chegar quase na hora.
+          let desejada = data.tela_desejada as string
+          if (corpo.aguardar && (corpo.tela === 'ligada' || corpo.tela === 'desligada')) {
+            const fim = Date.now() + 8_000
+            while (desejada === corpo.tela && Date.now() < fim) {
+              await new Promise((r) => setTimeout(r, 1000))
+              const { data: atual } = await supa
+                .from('dispositivos')
+                .select('tela_desejada')
+                .eq('token', token)
+                .maybeSingle()
+              if (atual?.tela_desejada) desejada = atual.tela_desejada
+            }
+          }
+
+          return Response.json({ telaDesejada: desejada })
         } catch (e) {
           return Response.json({ erro: (e as Error).message }, { status: 400 })
         }
