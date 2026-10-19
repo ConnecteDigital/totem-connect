@@ -43,7 +43,7 @@ export function montarComanda(p: PedidoDb, cfg: ConfigImpressora): Uint8Array {
     .linha(`#${p.numero_pedido}`)
     .tamanho(1, 1)
 
-  if (p.nome_cliente) e.tamanho(1, 2).linha(p.nome_cliente).tamanho(1, 1)
+  if (p.nome_cliente) e.tamanho(2, 2).linha(p.nome_cliente).tamanho(1, 1)
   e.negrito(false).separador()
 
   e.alinhar('esquerda').linha(rotuloConsumo(p)).linha(dataHora(p.criado_em)).separador()
@@ -58,8 +58,8 @@ export function montarComanda(p: PedidoDb, cfg: ConfigImpressora): Uint8Array {
 
   e.separador()
     .negrito(true)
-    .tamanho(1, 2)
-    .duasColunas('TOTAL', formatarBRL(p.valor_total))
+    .tamanho(2, 2)
+    .duasColunas('TOTAL', formatarBRL(p.valor_total), 24)
     .tamanho(1, 1)
     .negrito(false)
 
@@ -70,8 +70,8 @@ export function montarComanda(p: PedidoDb, cfg: ConfigImpressora): Uint8Array {
   e.separador()
     .alinhar('centro')
     .linha('Obrigado!')
-    .linha('Acompanhe seu pedido no painel.')
-    .quebrar(2)
+    .linha('Guarde este comprovante.')
+    .quebrar(4)
     .cortar()
 
   return e.bytes()

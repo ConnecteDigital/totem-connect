@@ -131,14 +131,15 @@ export class EscPos {
   }
 
   /** Esquerda + direita na mesma linha; quebra a esquerda se for comprida. */
-  duasColunas(esq: string, dir: string): this {
+  /** `largura`: colunas disponíveis (use metade das colunas quando o texto estiver em largura 2x). */
+  duasColunas(esq: string, dir: string, largura = this.colunas): this {
     const recuo = esq.match(/^\s*/)![0] // mantém o recuo (ex: "   + Bacon")
-    const espaco = this.colunas - dir.length - 1 - recuo.length
+    const espaco = largura - dir.length - 1 - recuo.length
     const partes = quebrarPalavras(esq.trim(), Math.max(espaco, 8))
     partes.forEach((p, i) => {
       const txt = recuo + p
       if (i === 0) {
-        this.linha(txt.padEnd(this.colunas - dir.length, ' ') + dir)
+        this.linha(txt.padEnd(largura - dir.length, ' ') + dir)
       } else {
         this.linha(txt)
       }
