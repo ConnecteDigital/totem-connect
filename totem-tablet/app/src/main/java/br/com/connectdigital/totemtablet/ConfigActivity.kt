@@ -97,7 +97,13 @@ class ConfigActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        aberta = true
         if (liberado) atualizarStatus()
+    }
+
+    override fun onPause() {
+        aberta = false
+        super.onPause()
     }
 
     private fun atualizarStatus() {
@@ -113,6 +119,12 @@ class ConfigActivity : Activity() {
             "Uso de bateria liberado: ${if (bateria) "OK" else "FALTA"}",
             "Tela inicial do tablet: ${if (home) "OK" else "FALTA"}",
         ).joinToString("\n")
+    }
+
+    companion object {
+        /** Enquanto os Ajustes estão abertos, o serviço não apaga a tela (senão não dá pra configurar). */
+        @Volatile
+        var aberta = false
     }
 
     private fun texto(t: String, tamanho: Float, cor: Int) = TextView(this).apply {

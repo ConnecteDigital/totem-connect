@@ -70,6 +70,7 @@ class ControleService : Service() {
     }
 
     private fun apagarTela() {
+        if (ConfigActivity.aberta) return
         val dpm = getSystemService(DevicePolicyManager::class.java)
         val admin = ComponentName(this, AdminReceiver::class.java)
         if (dpm.isAdminActive(admin)) {
