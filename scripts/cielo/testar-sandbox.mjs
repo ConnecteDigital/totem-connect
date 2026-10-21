@@ -72,6 +72,7 @@ try {
       { sku: 'sku-2', name: 'Refrigerante (teste)', unit_price: 500, quantity: 2 },
     ],
     totalCentavos: total,
+    paymentCode: c.codigoPagamentoCielo('cartao_credito'),
   })
   console.log('   ok, id =', id)
 

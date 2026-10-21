@@ -51,6 +51,7 @@ function Pagamento() {
             id: res.pedidoId,
             numero: res.numeroPedido,
             valor: carrinho.valorTotal,
+            escolher: res.escolherNaMaquininha,
           },
         })
       } else {

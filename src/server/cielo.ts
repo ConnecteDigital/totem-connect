@@ -83,6 +83,8 @@ export async function criarPedidoCielo(args: {
   referencia: string
   itens: ItemCielo[]
   totalCentavos: number
+  /** Forma de pagamento já escolhida (pula a escolha na maquininha). Ver codigoPagamentoCielo. */
+  paymentCode?: string
 }): Promise<string> {
   const soma = args.itens.reduce((s, i) => s + i.unit_price * i.quantity, 0)
   if (soma !== args.totalCentavos) {
@@ -95,9 +97,28 @@ export async function criarPedidoCielo(args: {
     items: args.itens.map((i) => ({ ...i, unit_of_measure: 'EACH' })),
     transactions: [],
     price: args.totalCentavos,
+    ...(args.paymentCode ? { payment_code: args.paymentCode } : {}),
   })
   if (!r.id) throw new Error('Cielo não devolveu o id do pedido.')
   return r.id
+}
+
+/**
+ * Forma de pagamento do totem -> valor aceito em payment_code (docs.cielo.com.br, "Valores aceitos
+ * no campo paymentCode"). O totem só vende à vista. Com isso a maquininha pula direto pra
+ * "insira ou aproxime o cartão" (só o pagamento total do pedido).
+ */
+export function codigoPagamentoCielo(forma: string): string | undefined {
+  switch (forma) {
+    case 'pix':
+      return 'PIX'
+    case 'cartao_credito':
+      return 'CREDITO_AVISTA'
+    case 'cartao_debito':
+      return 'DEBITO_AVISTA'
+    default:
+      return undefined
+  }
 }
 
 /** Libera o pedido pra pagamento: ele passa a aparecer na maquininha. */

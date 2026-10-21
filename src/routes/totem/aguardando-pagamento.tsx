@@ -14,11 +14,12 @@ export const Route = createFileRoute('/totem/aguardando-pagamento')({
     id: typeof s.id === 'string' ? s.id : '',
     numero: Number(s.numero) || 0,
     valor: Number(s.valor) || 0,
+    escolher: s.escolher === true || s.escolher === 'true',
   }),
 })
 
 function Aguardando() {
-  const { id, numero, valor } = Route.useSearch()
+  const { id, numero, valor, escolher } = Route.useSearch()
   const navigate = useNavigate()
   const [restante, setRestante] = useState(TIMEOUT_S)
   const [recusado, setRecusado] = useState(false)
@@ -105,6 +106,12 @@ function Aguardando() {
             <p className="mt-3 text-xl text-white/80">
               Pedido #{numero} · {formatarBRL(valor)}
             </p>
+            {escolher && (
+              <p className="mt-4 rounded-card bg-superficie px-6 py-4 text-xl text-white">
+                Na maquininha, toque em <strong className="text-laranja">Pedidos</strong> e
+                escolha <strong className="text-laranja">SENHA #{numero}</strong>.
+              </p>
+            )}
             <p className="mt-2 text-white/60">
               Siga as instruções na maquininha ao lado. Aproxime, insira o cartão ou
               escaneie o QR Code do Pix.

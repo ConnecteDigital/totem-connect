@@ -3,7 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { criarSupabaseServidor } from '#/lib/supabase/server'
 import { pagamentoProvedor } from '#/lib/config'
 import { resolverEstabelecimentoTotem } from '#/server/_comum'
-import { criarPedidoCielo, liberarPedidoCielo } from '#/server/cielo'
+import { codigoPagamentoCielo, criarPedidoCielo, liberarPedidoCielo } from '#/server/cielo'
 
 type ItemInput = {
   produtoId: string
@@ -38,6 +38,8 @@ export type CriarPedidoResultado = {
   numeroPedido: number
   /** true = totem deve esperar a maquininha concluir; false = já aprovado (mock) */
   aguardandoPagamento: boolean
+  /** true = o cliente precisa escolher o pedido na lista da maquininha (Cielo) */
+  escolherNaMaquininha: boolean
 }
 
 function montarObservacoes(personalizacao: string | null, obs: string): string | null {
@@ -201,9 +203,11 @@ export const criarPedido = createServerFn({ method: 'POST' })
         const totalCentavos = itensCielo.reduce((s, i) => s + i.unit_price * i.quantity, 0)
         const cieloId = await criarPedidoCielo({
           numero: String(numeroPedido),
-          referencia: `PEDIDO #${numeroPedido}`,
+          // aparece na lista de pedidos da maquininha: o cliente acha o dele pela senha/nome
+          referencia: `SENHA #${numeroPedido}${data.nomeCliente ? ' - ' + data.nomeCliente.slice(0, 30) : ''}`,
           itens: itensCielo,
           totalCentavos,
+          paymentCode: codigoPagamentoCielo(data.formaPagamento),
         })
         const upd = await supa
           .from('pagamentos')
@@ -227,5 +231,10 @@ export const criarPedido = createServerFn({ method: 'POST' })
       }
     }
 
-    return { pedidoId, numeroPedido, aguardandoPagamento: !mock }
+    return {
+      pedidoId,
+      numeroPedido,
+      aguardandoPagamento: !mock,
+      escolherNaMaquininha: provedor === 'cielo',
+    }
   })
