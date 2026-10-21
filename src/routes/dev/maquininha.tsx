@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { formatarBRL } from '#/lib/formato'
-import { confirmarPagamento, listarPagamentosPendentes } from '#/server/pagamento'
+import {
+  confirmarPagamento,
+  listarPagamentosPendentes,
+  simularPagamentoCieloSandbox,
+} from '#/server/pagamento'
 
 export const Route = createFileRoute('/dev/maquininha')({ component: SimuladorMaquininha })
 
@@ -53,6 +57,18 @@ function SimuladorMaquininha() {
     }
   }
 
+  async function pagarPelaCielo(p: Pendente) {
+    setOcupado(p.id)
+    try {
+      await simularPagamentoCieloSandbox({ data: { pedidoId: p.id } })
+      setErro(null)
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setOcupado(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-neutral-900 p-6 text-white">
       <h1 className="text-xl font-bold">Simulador da maquininha</h1>
@@ -80,6 +96,13 @@ function SimuladorMaquininha() {
                 {new Date(p.criado_em).toLocaleTimeString('pt-BR')}
               </div>
             </div>
+            <button
+              disabled={ocupado === p.id}
+              onClick={() => pagarPelaCielo(p)}
+              className="rounded-pill bg-sky-600 px-5 py-2 text-sm font-bold hover:bg-sky-500 disabled:opacity-50"
+            >
+              Pagar via Cielo (sandbox)
+            </button>
             <button
               disabled={ocupado === p.id}
               onClick={() => responder(p, 'aprovado')}
