@@ -126,6 +126,13 @@ export async function simularPagamentoCielo(id: string, valorCentavos: number): 
     number: String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0'),
     amount: valorCentavos,
     transaction_type: 'PAYMENT',
+    // a documentação mostra estes campos em camelCase no corpo desta chamada
+    paymentFields: {
+      primaryProductName: 'CREDITO',
+      secondaryProductName: 'A VISTA',
+      numberOfQuotas: 0,
+    },
+    card: { brand: 'VISA', mask: '411111******1111' },
   })
 }
 
