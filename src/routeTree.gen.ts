@@ -28,6 +28,7 @@ import { Route as TotemRevisaoRouteImport } from './routes/totem/revisao'
 import { Route as PainelPdvIndexRouteImport } from './routes/_painel/pdv/index'
 import { Route as PainelPdvProdutosRouteImport } from './routes/_painel/pdv/produtos'
 import { Route as PainelRelatoriosIndexRouteImport } from './routes/_painel/relatorios/index'
+import { Route as ApiDevProvedorRouteImport } from './routes/api/dev/provedor'
 import { Route as ApiImpressaoPendentesRouteImport } from './routes/api/impressao/pendentes'
 import { Route as ApiMaquininhaConfirmarRouteImport } from './routes/api/maquininha/confirmar'
 import { Route as ApiMaquininhaPendentesRouteImport } from './routes/api/maquininha/pendentes'
@@ -131,6 +132,11 @@ const PainelRelatoriosIndexRoute = PainelRelatoriosIndexRouteImport.update({
   path: '/relatorios/',
   getParentRoute: () => PainelRoute,
 } as any)
+const ApiDevProvedorRoute = ApiDevProvedorRouteImport.update({
+  id: '/api/dev/provedor',
+  path: '/api/dev/provedor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImpressaoPendentesRoute = ApiImpressaoPendentesRouteImport.update({
   id: '/api/impressao/pendentes',
   path: '/api/impressao/pendentes',
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/totem/revisao': typeof TotemRevisaoRoute
   '/totem/': typeof TotemIndexRoute
   '/pdv/produtos': typeof PainelPdvProdutosRoute
+  '/api/dev/provedor': typeof ApiDevProvedorRoute
   '/api/impressao/pendentes': typeof ApiImpressaoPendentesRoute
   '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
   '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/totem/revisao': typeof TotemRevisaoRoute
   '/totem': typeof TotemIndexRoute
   '/pdv/produtos': typeof PainelPdvProdutosRoute
+  '/api/dev/provedor': typeof ApiDevProvedorRoute
   '/api/impressao/pendentes': typeof ApiImpressaoPendentesRoute
   '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
   '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/totem/revisao': typeof TotemRevisaoRoute
   '/totem/': typeof TotemIndexRoute
   '/_painel/pdv/produtos': typeof PainelPdvProdutosRoute
+  '/api/dev/provedor': typeof ApiDevProvedorRoute
   '/api/impressao/pendentes': typeof ApiImpressaoPendentesRoute
   '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
   '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/totem/revisao'
     | '/totem/'
     | '/pdv/produtos'
+    | '/api/dev/provedor'
     | '/api/impressao/pendentes'
     | '/api/maquininha/confirmar'
     | '/api/maquininha/pendentes'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/totem/revisao'
     | '/totem'
     | '/pdv/produtos'
+    | '/api/dev/provedor'
     | '/api/impressao/pendentes'
     | '/api/maquininha/confirmar'
     | '/api/maquininha/pendentes'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/totem/revisao'
     | '/totem/'
     | '/_painel/pdv/produtos'
+    | '/api/dev/provedor'
     | '/api/impressao/pendentes'
     | '/api/maquininha/confirmar'
     | '/api/maquininha/pendentes'
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   TotemRouteRoute: typeof TotemRouteRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
   DevMaquininhaRoute: typeof DevMaquininhaRoute
+  ApiDevProvedorRoute: typeof ApiDevProvedorRoute
   ApiImpressaoPendentesRoute: typeof ApiImpressaoPendentesRoute
   ApiMaquininhaConfirmarRoute: typeof ApiMaquininhaConfirmarRoute
   ApiMaquininhaPendentesRoute: typeof ApiMaquininhaPendentesRoute
@@ -481,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelRelatoriosIndexRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/api/dev/provedor': {
+      id: '/api/dev/provedor'
+      path: '/api/dev/provedor'
+      fullPath: '/api/dev/provedor'
+      preLoaderRoute: typeof ApiDevProvedorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/impressao/pendentes': {
       id: '/api/impressao/pendentes'
       path: '/api/impressao/pendentes'
@@ -589,6 +609,7 @@ const rootRouteChildren: RootRouteChildren = {
   TotemRouteRoute: TotemRouteRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
   DevMaquininhaRoute: DevMaquininhaRoute,
+  ApiDevProvedorRoute: ApiDevProvedorRoute,
   ApiImpressaoPendentesRoute: ApiImpressaoPendentesRoute,
   ApiMaquininhaConfirmarRoute: ApiMaquininhaConfirmarRoute,
   ApiMaquininhaPendentesRoute: ApiMaquininhaPendentesRoute,
