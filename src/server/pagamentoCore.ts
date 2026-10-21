@@ -1,4 +1,10 @@
 import { criarSupabaseServidor } from '#/lib/supabase/server'
+import { pagamentoProvedor } from '#/lib/config'
+import {
+  consultarPedidoCielo,
+  fecharPedidoCielo,
+  resultadoDoPedido,
+} from '#/server/cielo'
 
 /**
  * Lógica de pagamento compartilhada entre as server functions (web: totem,
@@ -32,15 +38,51 @@ export async function listarPendentes(estabelecimentoId: string) {
 
 export async function statusPedido(estabelecimentoId: string, id: string) {
   const supa = criarSupabaseServidor()
+  const cielo = pagamentoProvedor() === 'cielo'
+  // as colunas do provedor (migração 007) só são lidas quando a Cielo está ligada
+  const seletor = cielo
+    ? ('status, numero_pedido, pagamentos ( status, provedor, provedor_pedido_id )' as const)
+    : ('status, numero_pedido, pagamentos ( status )' as const)
   const { data, error } = await supa
     .from('pedidos')
-    .select('status, numero_pedido, pagamentos ( status )')
+    .select(seletor)
     .eq('id', id)
     .eq('estabelecimento_id', estabelecimentoId)
     .maybeSingle()
   if (error) throw error
   if (!data) throw new Error('Pedido não encontrado.')
-  const pgs = (data.pagamentos ?? []) as Array<{ status: string }>
+  const pgs = (data.pagamentos ?? []) as unknown as Array<{
+    status: string
+    provedor?: string | null
+    provedor_pedido_id?: string | null
+  }>
+
+  // Cielo: o totem pergunta o status a cada ~2s; aqui perguntamos à Cielo se já foi pago.
+  const ultimo = pgs[pgs.length - 1]
+  if (
+    cielo &&
+    data.status === 'aguardando_pagamento' &&
+    ultimo?.status === 'pendente' &&
+    ultimo.provedor === 'cielo' &&
+    ultimo.provedor_pedido_id
+  ) {
+    try {
+      const r = resultadoDoPedido(await consultarPedidoCielo(ultimo.provedor_pedido_id))
+      if (r.pago) {
+        await confirmarPagamento(estabelecimentoId, {
+          pedidoId: id,
+          resultado: 'aprovado',
+          transacaoId: r.nsu ?? r.autorizacao,
+        })
+        fecharPedidoCielo(ultimo.provedor_pedido_id).catch(() => {}) // melhor esforço
+        return { status: 'em_preparo', pagamento: 'aprovado' as const, numeroPedido: data.numero_pedido }
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[cielo] consulta do pedido falhou:', e)
+    }
+  }
+
   return {
     status: data.status,
     pagamento: (pgs[pgs.length - 1]?.status ?? null) as
@@ -104,6 +146,32 @@ export async function cancelarPagamento(estabelecimentoId: string, pedidoId: str
   if (error) throw error
   if (!pedido) throw new Error('Pedido não encontrado.')
   if (pedido.status !== 'aguardando_pagamento') return { ok: true, status: pedido.status }
+
+  // Cielo: antes de cancelar, vê se o cliente não pagou no meio tempo; senão, tira da maquininha.
+  if (pagamentoProvedor() === 'cielo') {
+    const { data: pg } = await supa
+      .from('pagamentos')
+      .select('provedor, provedor_pedido_id')
+      .eq('pedido_id', pedidoId)
+      .maybeSingle()
+    if (pg?.provedor === 'cielo' && pg.provedor_pedido_id) {
+      try {
+        const r = resultadoDoPedido(await consultarPedidoCielo(pg.provedor_pedido_id))
+        if (r.pago) {
+          await confirmarPagamento(estabelecimentoId, {
+            pedidoId,
+            resultado: 'aprovado',
+            transacaoId: r.nsu ?? r.autorizacao,
+          })
+          return { ok: true, status: 'em_preparo' }
+        }
+        await fecharPedidoCielo(pg.provedor_pedido_id)
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[cielo] não consegui fechar o pedido ao cancelar:', e)
+      }
+    }
+  }
 
   await supa
     .from('pagamentos')

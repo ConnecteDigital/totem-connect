@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { criarSupabaseServidor } from '#/lib/supabase/server'
-import { pagamentoMock } from '#/lib/config'
+import { pagamentoProvedor } from '#/lib/config'
 import { resolverEstabelecimentoTotem } from '#/server/_comum'
+import { criarPedidoCielo, liberarPedidoCielo } from '#/server/cielo'
 
 type ItemInput = {
   produtoId: string
@@ -109,7 +110,8 @@ export const criarPedido = createServerFn({ method: 'POST' })
     if (numRes.error) throw numRes.error
     const numeroPedido = numRes.data as number
 
-    const mock = pagamentoMock()
+    const provedor = pagamentoProvedor()
+    const mock = provedor === 'mock'
     const agora = new Date().toISOString()
     const end = data.modoEntrega === 'entrega' ? data.endereco : null
 
@@ -180,6 +182,50 @@ export const criarPedido = createServerFn({ method: 'POST' })
       status: mock ? 'aprovado' : 'pendente',
       respondido_em: mock ? agora : null,
     })
+
+    if (provedor === 'cielo') {
+      try {
+        // um item da Cielo por linha do pedido (preço unitário já com os adicionais), em centavos
+        const itensCielo = linhasItens.map((li, idx) => {
+          const somaAdic = data.itens[idx].adicionalIds.reduce(
+            (s, aid) => s + Number(adicionais.get(aid)!.preco),
+            0,
+          )
+          return {
+            sku: li.produto_id,
+            name: li.produto_nome.slice(0, 60),
+            unit_price: Math.round((li.preco_unitario + somaAdic) * 100),
+            quantity: li.quantidade,
+          }
+        })
+        const totalCentavos = itensCielo.reduce((s, i) => s + i.unit_price * i.quantity, 0)
+        const cieloId = await criarPedidoCielo({
+          numero: String(numeroPedido),
+          referencia: `PEDIDO #${numeroPedido}`,
+          itens: itensCielo,
+          totalCentavos,
+        })
+        const upd = await supa
+          .from('pagamentos')
+          .update({ provedor: 'cielo', provedor_pedido_id: cieloId })
+          .eq('pedido_id', pedidoId)
+        if (upd.error) throw upd.error
+        await liberarPedidoCielo(cieloId) // passa a aparecer na maquininha
+      } catch (e) {
+        // não deixa pedido "pendente" pra sempre se a maquininha nem recebeu a cobrança
+        // eslint-disable-next-line no-console
+        console.error('[cielo] falha ao criar/liberar o pedido:', e)
+        await supa
+          .from('pagamentos')
+          .update({ status: 'recusado', respondido_em: agora })
+          .eq('pedido_id', pedidoId)
+        await supa
+          .from('pedidos')
+          .update({ status: 'cancelado', cancelado_em: agora })
+          .eq('id', pedidoId)
+        throw new Error('Não foi possível iniciar o pagamento na maquininha. Chame o atendente.')
+      }
+    }
 
     return { pedidoId, numeroPedido, aguardandoPagamento: !mock }
   })
