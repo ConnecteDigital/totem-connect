@@ -4,6 +4,7 @@ import { Botao } from '#/components/totem/Botao'
 import { lerConfig, salvarConfig, type ConfigImpressora } from '#/lib/impressora/config'
 import type { PaginaCodigo } from '#/lib/impressora/escpos'
 import { imprimirTeste, suportaWebUSB } from '#/lib/impressora/imprimir'
+import { ponteNativa } from '#/lib/impressora/nativo'
 import {
   descreverDispositivo,
   dispositivoPareado,
@@ -21,6 +22,12 @@ function ConfigImpressora() {
   const [aviso, setAviso] = useState<Aviso>(null)
   const [ocupado, setOcupado] = useState(false)
   const webusb = suportaWebUSB()
+  const nativo = ponteNativa()
+  const [statusNativo, setStatusNativo] = useState<string>('')
+  useEffect(() => {
+    if (nativo) setStatusNativo(nativo.statusImpressora())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const atualizarPareado = useCallback(async () => {
     try {
@@ -85,10 +92,29 @@ function ConfigImpressora() {
         </p>
 
         <div className="mt-8 space-y-3 rounded-card bg-superficie p-5">
-          <Linha rotulo="WebUSB neste navegador" valor={webusb ? 'Disponível ✓' : 'Indisponível ✗'} ok={webusb} />
-          <Linha rotulo="Impressora pareada" valor={pareado ?? 'Nenhuma'} ok={!!pareado} />
+          {nativo ? (
+            <Linha rotulo="Impressora (app do tablet)" valor={statusNativo || '—'} ok={statusNativo.includes('permitida')} />
+          ) : (
+            <>
+              <Linha rotulo="WebUSB neste navegador" valor={webusb ? 'Disponível ✓' : 'Indisponível ✗'} ok={webusb} />
+              <Linha rotulo="Impressora pareada" valor={pareado ?? 'Nenhuma'} ok={!!pareado} />
+            </>
+          )}
         </div>
 
+        {nativo ? (
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Botao
+              variante="secundario"
+              onClick={() => {
+                nativo.pedirPermissaoImpressora()
+                setStatusNativo(nativo.statusImpressora())
+              }}
+            >
+              Permitir a impressora USB
+            </Botao>
+          </div>
+        ) : (
         <div className="mt-6 flex flex-wrap gap-3">
           <Botao onClick={() => parear(false)} disabled={!webusb}>
             Parear impressora
@@ -97,6 +123,7 @@ function ConfigImpressora() {
             Não apareceu? Mostrar todos os USB
           </Botao>
         </div>
+        )}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-medium text-white/70">
@@ -126,7 +153,7 @@ function ConfigImpressora() {
         </div>
 
         <div className="mt-6">
-          <Botao variante="secundario" onClick={testar} disabled={!webusb || !pareado || ocupado}>
+          <Botao variante="secundario" onClick={testar} disabled={(!nativo && (!webusb || !pareado)) || ocupado}>
             {ocupado ? 'Imprimindo…' : 'Imprimir página de teste'}
           </Botao>
         </div>

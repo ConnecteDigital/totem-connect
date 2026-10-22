@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCarrinho } from '#/lib/carrinho'
-import { imprimirComandaCliente, suportaWebUSB } from '#/lib/impressora/imprimir'
+import { imprimirComandaCliente, impressaoDisponivel } from '#/lib/impressora/imprimir'
 import { getPedidoImpressao } from '#/server/pedidoImpressao'
 import { Botao } from '#/components/totem/Botao'
 import { IconeCheck } from '#/components/icones'
@@ -36,9 +36,9 @@ function PedidoRealizado() {
   useEffect(() => {
     if (!id || jaImprimiu.current) return
     jaImprimiu.current = true
-    // Aparelho sem WebUSB (ex.: o app de quiosque, que usa WebView): a impressão não é feita
-    // por aqui (agente no PC / ponte nativa), então não tenta nem mostra aviso de falha.
-    if (!suportaWebUSB()) {
+    // Aparelho sem como imprimir (nem ponte nativa do app, nem WebUSB): a impressão não é feita
+    // por aqui (ex.: agente no PC), então não tenta nem mostra aviso de falha.
+    if (!impressaoDisponivel()) {
       setImpressao('ok')
       return
     }

@@ -22,8 +22,8 @@ android {
         // 33: o tablet (HarmonyOS 2 / base Android 10) não exige as regras novas de serviço em
         // primeiro plano do Android 14, e o app não vai pra Play Store.
         targetSdk = 33
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.2.0"
 
         buildConfigField("String", "BASE_URL", "\"${prop("BASE_URL", "https://totem-connect-puce.vercel.app")}\"")
         buildConfigField("String", "DEVICE_TOKEN", "\"${prop("DEVICE_TOKEN", "tok_totem_piloto_TROQUE_ISTO")}\"")

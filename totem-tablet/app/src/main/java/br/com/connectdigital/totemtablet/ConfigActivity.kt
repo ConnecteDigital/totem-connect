@@ -58,6 +58,13 @@ class ConfigActivity : Activity() {
         coluna.addView(botao("3. Definir como tela inicial do tablet") {
             startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
         })
+        coluna.addView(botao("4. Permitir a impressora USB") {
+            // a caixa "permitir?" precisa da tela livre: pede em outra thread
+            Thread {
+                ImpressoraUsb(applicationContext).pedirPermissao()
+                runOnUiThread { atualizarStatus() }
+            }.start()
+        })
         coluna.addView(botao("Ajustes do app (início automático, notificações)") {
             startActivity(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.parse("package:$packageName")),
@@ -118,6 +125,7 @@ class ConfigActivity : Activity() {
             "Administrador do dispositivo: ${if (admin) "OK" else "FALTA"}",
             "Uso de bateria liberado: ${if (bateria) "OK" else "FALTA"}",
             "Tela inicial do tablet: ${if (home) "OK" else "FALTA"}",
+            "Impressora USB: ${ImpressoraUsb(applicationContext).status()}",
         ).joinToString("\n")
     }
 

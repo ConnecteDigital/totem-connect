@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- qualquer dispositivo USB de classe 7 (impressora) -->
+    <usb-device class="7" />
+</resources>

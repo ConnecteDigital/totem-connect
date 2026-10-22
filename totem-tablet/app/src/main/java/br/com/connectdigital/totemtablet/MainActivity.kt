@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.view.View
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
@@ -104,7 +105,23 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun versao(): String = BuildConfig.VERSION_NAME
+
+        /** Recebe os bytes ESC/POS em base64 e imprime. Devolve "ok" ou o erro. */
+        @JavascriptInterface
+        fun imprimir(base64: String): String = try {
+            impressora.imprimir(Base64.decode(base64, Base64.DEFAULT))
+        } catch (e: Exception) {
+            "Erro: ${e.message}"
+        }
+
+        @JavascriptInterface
+        fun statusImpressora(): String = impressora.status()
+
+        @JavascriptInterface
+        fun pedirPermissaoImpressora(): Boolean = impressora.pedirPermissao()
     }
+
+    private val impressora by lazy { ImpressoraUsb(applicationContext) }
 
     private inner class ClienteWeb : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
