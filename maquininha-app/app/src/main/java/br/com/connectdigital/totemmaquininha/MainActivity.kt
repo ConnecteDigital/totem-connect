@@ -46,7 +46,8 @@ class MainActivity : AppCompatActivity() {
             Estado.Iniciando -> "Iniciando…" to ""
             Estado.Aguardando -> "Aguardando pedido" to "Modo: ${BuildConfig.PAGAMENTO_IMPL}"
             is Estado.Cobrando -> "Cobrando #${e.numero}" to brl.format(e.valorCentavos / 100.0)
-            is Estado.Aprovado -> "Aprovado" to "Pedido #${e.numero}"
+            is Estado.Autorizado -> "Pagamento aprovado" to "Retire o cartão · Pedido #${e.numero}"
+            is Estado.Aprovado -> "Pagamento aprovado" to "Pedido #${e.numero}"
             is Estado.Recusado -> "Recusado" to "Pedido #${e.numero} - tente de novo"
             is Estado.Erro -> "Erro" to e.mensagem
         }

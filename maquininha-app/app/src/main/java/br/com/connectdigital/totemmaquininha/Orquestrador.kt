@@ -22,6 +22,8 @@ sealed class Estado {
     data object Iniciando : Estado()
     data object Aguardando : Estado()
     data class Cobrando(val numero: Int, val valorCentavos: Long) : Estado()
+    /** Terminal autorizou, mas o cliente ainda não retirou o cartão. */
+    data class Autorizado(val numero: Int) : Estado()
     data class Aprovado(val numero: Int) : Estado()
     data class Recusado(val numero: Int) : Estado()
     data class Erro(val mensagem: String) : Estado()
@@ -86,6 +88,7 @@ class Orquestrador(
         // O id da transação e a bandeira seguem no aviso final, quando o doPayment termina.
         pagamento.definirAoAutorizar {
             autorizado.set(true)
+            _estado.value = Estado.Autorizado(pedido.numeroPedido)
             reportar(pedido, aprovado = true, transacaoId = null, bandeira = null)
         }
 
