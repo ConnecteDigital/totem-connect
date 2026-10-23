@@ -59,5 +59,5 @@ dependencies {
     // SDK de pagamento PagBank (SmartPOS / PlugPagServiceWrapper).
     // Só necessário quando PAGAMENTO_IMPL = "PLUGPAG". Requer o repositório maven
     // descomentado em settings.gradle.kts.
-    // implementation("br.com.uol.pagseguro.plugpagservice.wrapper:wrapper:1.35.0")
+    implementation("br.com.uol.pagseguro.plugpagservice.wrapper:wrapper:1.35.0")
 }
