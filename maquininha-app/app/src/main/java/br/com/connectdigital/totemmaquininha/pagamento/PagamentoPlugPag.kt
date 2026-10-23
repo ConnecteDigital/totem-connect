@@ -37,7 +37,7 @@ class PagamentoPlugPag(
             // (imprimir / SMS). Isso trava o resultado até alguém tocar — inaceitável num totem.
             // Aqui o app responde sozinho: sem comprovante na maquininha (a senha sai no totem).
             try {
-                pp.setPrintActionListener(object : PlugPagPrintActionListener {
+                val rl = pp.setPrintActionListener(object : PlugPagPrintActionListener {
                     override fun onPrint(
                         phoneNumber: String?,
                         transactionResult: PlugPagTransactionResult?,
@@ -51,9 +51,23 @@ class PagamentoPlugPag(
                         Log.w(TAG, "printAction erro: ${e?.message}")
                     }
                 })
+                Log.i(TAG, "setPrintActionListener -> result=${rl.result}")
                 pp.setEventListener(object : br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventListener {
                     override fun onEvent(p0: PlugPagEventData) {
                         Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
+                        if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
+                            // Aprovou: o serviço vai abrir a pergunta "via do cliente?" na maquininha.
+                            // Respondemos sozinhos (5 = não fazer nada) pra o resultado não ficar preso.
+                            Thread {
+                                try {
+                                    Thread.sleep(700)
+                                    pp.doPrintAction(ACAO_NAO_FAZER_NADA, null)
+                                    Log.i(TAG, "doPrintAction($ACAO_NAO_FAZER_NADA) enviado")
+                                } catch (ex: Exception) {
+                                    Log.w(TAG, "doPrintAction falhou: ${ex.message}")
+                                }
+                            }.start()
+                        }
                     }
                 })
             } catch (e: Exception) {
@@ -108,5 +122,7 @@ class PagamentoPlugPag(
 
     private companion object {
         const val TAG = "PagamentoPlugPag"
+        /** código do SDK: IPlugPagWrapper.doPrintAction(5) = doNothing (sem via do cliente) */
+        const val ACAO_NAO_FAZER_NADA = 5
     }
 }
