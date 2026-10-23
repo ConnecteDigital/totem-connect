@@ -10,7 +10,7 @@ import { IconeCartao, IconePix } from '#/components/icones'
 
 export const Route = createFileRoute('/totem/pagamento')({ component: Pagamento })
 
-type Forma = 'cartao' | 'pix'
+type Forma = 'credito' | 'debito' | 'pix'
 
 function Pagamento() {
   const carrinho = useCarrinho()
@@ -32,7 +32,8 @@ function Pagamento() {
       tipoConsumo: carrinho.tipoConsumo ?? 'comer_aqui',
       modoEntrega: carrinho.modoEntrega,
       endereco: carrinho.endereco,
-      formaPagamento: forma === 'pix' ? 'pix' : 'cartao_credito',
+      formaPagamento:
+        forma === 'pix' ? 'pix' : forma === 'debito' ? 'cartao_debito' : 'cartao_credito',
       itens: carrinho.itens.map((i) => ({
         produtoId: i.produto.id,
         quantidade: i.quantidade,
@@ -69,17 +70,24 @@ function Pagamento() {
   return (
     <>
       <CabecalhoTotem />
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center px-8 py-10">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center px-8 py-10">
         <h1 className="text-4xl font-extrabold">Como deseja pagar?</h1>
         <p className="mt-2 text-white/60">Total a pagar: {formatarBRL(carrinho.valorTotal)}</p>
 
         <div className="mt-10 flex w-full gap-5">
           <OpcaoPagamento
-            ativo={forma === 'cartao'}
-            aoClicar={() => setForma('cartao')}
+            ativo={forma === 'credito'}
+            aoClicar={() => setForma('credito')}
             icone={<IconeCartao width={44} height={44} />}
-            titulo="Cartão"
-            sub="Crédito ou débito"
+            titulo="Crédito"
+            sub="Aproxime ou insira"
+          />
+          <OpcaoPagamento
+            ativo={forma === 'debito'}
+            aoClicar={() => setForma('debito')}
+            icone={<IconeCartao width={44} height={44} />}
+            titulo="Débito"
+            sub="Aproxime ou insira"
           />
           <OpcaoPagamento
             ativo={forma === 'pix'}
