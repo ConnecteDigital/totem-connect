@@ -4,7 +4,11 @@ import android.content.Context
 import android.util.Log
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagActivationData
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
+import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
+import br.com.uol.pagseguro.plugpagservice.wrapper.listeners.PlugPagPrintActionListener
 
 /**
  * Implementação real com o PlugPagServiceWrapper (SmartPOS / Moderninha Smart 2).
@@ -27,7 +31,36 @@ class PagamentoPlugPag(
     private val activationCode: String,
 ) : Pagamento {
 
-    private val plugpag by lazy { PlugPag(context) }
+    private val plugpag by lazy {
+        PlugPag(context).also { pp ->
+            // O SDK, depois de autorizar, pergunta ao cliente na maquininha o que fazer com a via
+            // (imprimir / SMS). Isso trava o resultado até alguém tocar — inaceitável num totem.
+            // Aqui o app responde sozinho: sem comprovante na maquininha (a senha sai no totem).
+            try {
+                pp.setPrintActionListener(object : PlugPagPrintActionListener {
+                    override fun onPrint(
+                        phoneNumber: String?,
+                        transactionResult: PlugPagTransactionResult?,
+                        onFinishActions: PlugPagPrintActionListener.OnFinishPlugPagPrintActions?,
+                    ) {
+                        Log.i(TAG, "comprovante: respondendo doNothing (sem via na maquininha)")
+                        onFinishActions?.doNothing(pp)
+                    }
+
+                    override fun onError(e: PlugPagException?) {
+                        Log.w(TAG, "printAction erro: ${e?.message}")
+                    }
+                })
+                pp.setEventListener(object : br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventListener {
+                    override fun onEvent(p0: PlugPagEventData) {
+                        Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
+                    }
+                })
+            } catch (e: Exception) {
+                Log.w(TAG, "listeners: ${e.message}")
+            }
+        }
+    }
     private var ativado = false
 
     override suspend fun ativar() {
