@@ -56,6 +56,21 @@ class Backend(
         }
     }
 
+    /** Status atual do pedido no backend ("aguardando_pagamento", "cancelado", "em_preparo"…). */
+    fun statusPedido(pedidoId: String): String {
+        val req = Request.Builder()
+            .url("$baseUrl/api/maquininha/status?pedidoId=$pedidoId")
+            .header("x-device-token", deviceToken)
+            .get()
+            .build()
+
+        http.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) error("status HTTP ${resp.code}: $body")
+            return JSONObject(body).optString("status")
+        }
+    }
+
     /** Reporta o resultado da cobrança. */
     fun confirmar(
         pedidoId: String,

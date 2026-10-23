@@ -32,6 +32,7 @@ import { Route as ApiDevProvedorRouteImport } from './routes/api/dev/provedor'
 import { Route as ApiImpressaoPendentesRouteImport } from './routes/api/impressao/pendentes'
 import { Route as ApiMaquininhaConfirmarRouteImport } from './routes/api/maquininha/confirmar'
 import { Route as ApiMaquininhaPendentesRouteImport } from './routes/api/maquininha/pendentes'
+import { Route as ApiMaquininhaStatusRouteImport } from './routes/api/maquininha/status'
 import { Route as ApiTotemEstadoRouteImport } from './routes/api/totem/estado'
 import { Route as ImprimirComandaIdRouteImport } from './routes/imprimir/comanda.$id'
 import { Route as ImprimirCozinhaIdRouteImport } from './routes/imprimir/cozinha.$id'
@@ -152,6 +153,11 @@ const ApiMaquininhaPendentesRoute = ApiMaquininhaPendentesRouteImport.update({
   path: '/api/maquininha/pendentes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMaquininhaStatusRoute = ApiMaquininhaStatusRouteImport.update({
+  id: '/api/maquininha/status',
+  path: '/api/maquininha/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTotemEstadoRoute = ApiTotemEstadoRouteImport.update({
   id: '/api/totem/estado',
   path: '/api/totem/estado',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/api/impressao/pendentes': typeof ApiImpressaoPendentesRoute
   '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
   '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
+  '/api/maquininha/status': typeof ApiMaquininhaStatusRoute
   '/api/totem/estado': typeof ApiTotemEstadoRoute
   '/imprimir/comanda/$id': typeof ImprimirComandaIdRoute
   '/imprimir/cozinha/$id': typeof ImprimirCozinhaIdRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/api/impressao/pendentes': typeof ApiImpressaoPendentesRoute
   '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
   '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
+  '/api/maquininha/status': typeof ApiMaquininhaStatusRoute
   '/api/totem/estado': typeof ApiTotemEstadoRoute
   '/imprimir/comanda/$id': typeof ImprimirComandaIdRoute
   '/imprimir/cozinha/$id': typeof ImprimirCozinhaIdRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/api/impressao/pendentes': typeof ApiImpressaoPendentesRoute
   '/api/maquininha/confirmar': typeof ApiMaquininhaConfirmarRoute
   '/api/maquininha/pendentes': typeof ApiMaquininhaPendentesRoute
+  '/api/maquininha/status': typeof ApiMaquininhaStatusRoute
   '/api/totem/estado': typeof ApiTotemEstadoRoute
   '/imprimir/comanda/$id': typeof ImprimirComandaIdRoute
   '/imprimir/cozinha/$id': typeof ImprimirCozinhaIdRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/api/impressao/pendentes'
     | '/api/maquininha/confirmar'
     | '/api/maquininha/pendentes'
+    | '/api/maquininha/status'
     | '/api/totem/estado'
     | '/imprimir/comanda/$id'
     | '/imprimir/cozinha/$id'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/api/impressao/pendentes'
     | '/api/maquininha/confirmar'
     | '/api/maquininha/pendentes'
+    | '/api/maquininha/status'
     | '/api/totem/estado'
     | '/imprimir/comanda/$id'
     | '/imprimir/cozinha/$id'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/api/impressao/pendentes'
     | '/api/maquininha/confirmar'
     | '/api/maquininha/pendentes'
+    | '/api/maquininha/status'
     | '/api/totem/estado'
     | '/imprimir/comanda/$id'
     | '/imprimir/cozinha/$id'
@@ -354,6 +366,7 @@ export interface RootRouteChildren {
   ApiImpressaoPendentesRoute: typeof ApiImpressaoPendentesRoute
   ApiMaquininhaConfirmarRoute: typeof ApiMaquininhaConfirmarRoute
   ApiMaquininhaPendentesRoute: typeof ApiMaquininhaPendentesRoute
+  ApiMaquininhaStatusRoute: typeof ApiMaquininhaStatusRoute
   ApiTotemEstadoRoute: typeof ApiTotemEstadoRoute
   ImprimirComandaIdRoute: typeof ImprimirComandaIdRoute
   ImprimirCozinhaIdRoute: typeof ImprimirCozinhaIdRoute
@@ -522,6 +535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMaquininhaPendentesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/maquininha/status': {
+      id: '/api/maquininha/status'
+      path: '/api/maquininha/status'
+      fullPath: '/api/maquininha/status'
+      preLoaderRoute: typeof ApiMaquininhaStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/totem/estado': {
       id: '/api/totem/estado'
       path: '/api/totem/estado'
@@ -613,6 +633,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiImpressaoPendentesRoute: ApiImpressaoPendentesRoute,
   ApiMaquininhaConfirmarRoute: ApiMaquininhaConfirmarRoute,
   ApiMaquininhaPendentesRoute: ApiMaquininhaPendentesRoute,
+  ApiMaquininhaStatusRoute: ApiMaquininhaStatusRoute,
   ApiTotemEstadoRoute: ApiTotemEstadoRoute,
   ImprimirComandaIdRoute: ImprimirComandaIdRoute,
   ImprimirCozinhaIdRoute: ImprimirCozinhaIdRoute,

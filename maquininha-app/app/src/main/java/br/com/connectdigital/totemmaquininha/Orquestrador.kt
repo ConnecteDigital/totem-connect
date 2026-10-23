@@ -7,6 +7,7 @@ import br.com.connectdigital.totemmaquininha.pagamento.Pagamento
 import br.com.connectdigital.totemmaquininha.pagamento.TipoPagamento
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,16 +73,21 @@ class Orquestrador(
             else -> TipoPagamento.CREDITO
         }
 
+        // Se o cliente cancelar no totem durante a cobrança, tira a tela de pagamento da maquininha.
+        val vigia = scope.launch(Dispatchers.IO) { vigiarCancelamento(pedido) }
+
         val res = try {
             withContext(Dispatchers.IO) { pagamento.cobrar(pedido.valorCentavos, tipo) }
         } catch (e: Exception) {
             Log.e(TAG, "cobrar falhou", e)
+            vigia.cancel()
             reportar(pedido, aprovado = false, transacaoId = null, bandeira = null)
             _estado.value = Estado.Erro(e.message ?: "Falha na cobrança")
             volta()
             return@withLock
         }
 
+        vigia.cancel()
         reportar(pedido, res.aprovado, res.transacaoId, res.bandeira)
 
         if (res.aprovado) {
@@ -92,6 +98,22 @@ class Orquestrador(
             _estado.value = Estado.Recusado(pedido.numeroPedido)
         }
         volta()
+    }
+
+    private suspend fun vigiarCancelamento(pedido: PedidoPendente) {
+        while (currentCoroutineContext().isActive) {
+            delay(2000)
+            try {
+                val status = backend.statusPedido(pedido.id)
+                if (status.isNotBlank() && status != "aguardando_pagamento") {
+                    Log.i(TAG, "pedido ${pedido.numeroPedido} saiu de aguardando_pagamento ($status): abortando cobrança")
+                    pagamento.abortar()
+                    return
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "vigia: ${e.message}")
+            }
+        }
     }
 
     private fun reportar(
