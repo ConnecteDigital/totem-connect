@@ -18,10 +18,11 @@ android {
 
     defaultConfig {
         applicationId = "br.com.connectdigital.totemmaquininha"
-        minSdk = 25
-        targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        // Guia de boas práticas SmartPOS da PagBank: minSdk e targetSdk = 23
+        minSdk = 23
+        targetSdk = 23
+        versionCode = 2
+        versionName = "0.2.0"
 
         buildConfigField("String", "BASE_URL", "\"${prop("BASE_URL", "https://totem-connect-puce.vercel.app")}\"")
         buildConfigField("String", "DEVICE_TOKEN", "\"${prop("DEVICE_TOKEN", "tok_totem_piloto_TROQUE_ISTO")}\"")
@@ -35,8 +36,29 @@ android {
         viewBinding = true
     }
 
+    // O alerta é regra da Google Play; este app é distribuído pela loja da PagBank (targetSdk 23 exigido por eles)
+    lint { disable += "ExpiredTargetSdkVersion" }
+
+    // Assinatura de release (keystore fica fora do repositório; senhas em local.properties)
+    signingConfigs {
+        create("release") {
+            val arquivo = localProps.getProperty("RELEASE_STORE_FILE")
+            if (arquivo != null) {
+                storeFile = file(arquivo)
+                storePassword = localProps.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = localProps.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = localProps.getProperty("RELEASE_KEY_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (localProps.getProperty("RELEASE_STORE_FILE") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

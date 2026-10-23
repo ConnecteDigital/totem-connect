@@ -46,3 +46,6 @@ totem-tablet/captures/
 *.aab
 *.keystore
 !gradle-wrapper.jar
+
+# APKs gerados para homologação
+homologacao/*.apk
