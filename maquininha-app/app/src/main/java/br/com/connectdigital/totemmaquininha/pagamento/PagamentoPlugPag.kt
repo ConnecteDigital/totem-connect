@@ -5,13 +5,14 @@ import android.util.Log
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagActivationData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventData
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventListener
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
 import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
 import br.com.uol.pagseguro.plugpagservice.wrapper.listeners.PlugPagPrintActionListener
 
 /**
- * Implementação real com o PlugPagServiceWrapper (SmartPOS / Moderninha Smart 2).
+ * Implementação real com o PlugPagServiceWrapper (SmartPOS / Moderninha Smart 2 / Gertec GPOS780S).
  *
  * Assinaturas conferidas no SDK 1.35.0 (javap):
  *  - PlugPag(Context)
@@ -25,6 +26,11 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.listeners.PlugPagPrintActionL
  *  - `plugpag` é uma ÚNICA instância (lazy)
  *  - todos os métodos são `suspend` e o Orquestrador os chama em Dispatchers.IO
  *  - o Orquestrador serializa as chamadas (Mutex) -> nunca 2 pagamentos juntos
+ *
+ * PROBLEMA CONHECIDO (resolvido aqui): depois de aprovar, o serviço da PagBank abre na maquininha a
+ * pergunta "via do cliente: imprimir / SMS / cancelar" (PLUGPAG_YNINPUT) e SEGURA o doPayment até
+ * alguém tocar. Num totem isso trava o pedido. O app responde sozinho com doPrintAction(5 = não
+ * fazer nada) — insistindo, porque o serviço às vezes está ocupado e recusa ("non occupiable").
  */
 class PagamentoPlugPag(
     private val context: Context,
@@ -33,40 +39,14 @@ class PagamentoPlugPag(
 
     private val plugpag by lazy {
         PlugPag(context).also { pp ->
-            // O SDK, depois de autorizar, pergunta ao cliente na maquininha o que fazer com a via
-            // (imprimir / SMS). Isso trava o resultado até alguém tocar — inaceitável num totem.
-            // Aqui o app responde sozinho: sem comprovante na maquininha (a senha sai no totem).
             try {
-                val rl = pp.setPrintActionListener(object : PlugPagPrintActionListener {
-                    override fun onPrint(
-                        phoneNumber: String?,
-                        transactionResult: PlugPagTransactionResult?,
-                        onFinishActions: PlugPagPrintActionListener.OnFinishPlugPagPrintActions?,
-                    ) {
-                        Log.i(TAG, "comprovante: respondendo doNothing (sem via na maquininha)")
-                        onFinishActions?.doNothing(pp)
-                    }
-
-                    override fun onError(e: PlugPagException?) {
-                        Log.w(TAG, "printAction erro: ${e?.message}")
-                    }
-                })
+                val rl = pp.setPrintActionListener(ouvinteComprovante(pp))
                 Log.i(TAG, "setPrintActionListener -> result=${rl.result}")
-                pp.setEventListener(object : br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventListener {
+                pp.setEventListener(object : PlugPagEventListener {
                     override fun onEvent(p0: PlugPagEventData) {
                         Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
                         if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
-                            // Aprovou: o serviço vai abrir a pergunta "via do cliente?" na maquininha.
-                            // Respondemos sozinhos (5 = não fazer nada) pra o resultado não ficar preso.
-                            Thread {
-                                try {
-                                    Thread.sleep(700)
-                                    pp.doPrintAction(ACAO_NAO_FAZER_NADA, null)
-                                    Log.i(TAG, "doPrintAction($ACAO_NAO_FAZER_NADA) enviado")
-                                } catch (ex: Exception) {
-                                    Log.w(TAG, "doPrintAction falhou: ${ex.message}")
-                                }
-                            }.start()
+                            responderComprovanteSemVia(pp)
                         }
                     }
                 })
@@ -75,7 +55,45 @@ class PagamentoPlugPag(
             }
         }
     }
+
+    /** Ouvinte que responde sozinho à pergunta de comprovante (sem via na maquininha). */
+    private fun ouvinteComprovante(pp: PlugPag) = object : PlugPagPrintActionListener {
+        override fun onPrint(
+            phoneNumber: String?,
+            transactionResult: PlugPagTransactionResult?,
+            onFinishActions: PlugPagPrintActionListener.OnFinishPlugPagPrintActions?,
+        ) {
+            Log.i(TAG, "onPrint DISPAROU: respondendo doNothing")
+            onFinishActions?.doNothing(pp)
+        }
+
+        override fun onError(e: PlugPagException?) {
+            Log.w(TAG, "printAction erro: ${e?.message}")
+        }
+    }
+
     private var ativado = false
+
+    /** true enquanto um doPayment está em andamento (usado pelo laço que responde o comprovante). */
+    @Volatile
+    private var pagando = false
+
+    private fun responderComprovanteSemVia(pp: PlugPag) {
+        Thread {
+            var n = 0
+            while (pagando && n < MAX_TENTATIVAS) {
+                try {
+                    Thread.sleep(500)
+                    if (!pagando) break
+                    pp.doPrintAction(ACAO_NAO_FAZER_NADA, null)
+                    Log.i(TAG, "doPrintAction($ACAO_NAO_FAZER_NADA) tentativa ${n + 1}")
+                } catch (ex: Exception) {
+                    Log.w(TAG, "doPrintAction falhou: ${ex.message}")
+                }
+                n++
+            }
+        }.start()
+    }
 
     override suspend fun ativar() {
         if (ativado) return
@@ -90,6 +108,21 @@ class PagamentoPlugPag(
 
     override suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento {
         ativar()
+        // O registro do ouvinte pode expirar com o tempo: renova antes de cada cobrança.
+        try {
+            plugpag.setPrintActionListener(ouvinteComprovante(plugpag))
+        } catch (e: Exception) {
+            Log.w(TAG, "renovar ouvinte: ${e.message}")
+        }
+        pagando = true
+        try {
+            return cobrarInterno(valorCentavos, tipo)
+        } finally {
+            pagando = false
+        }
+    }
+
+    private fun cobrarInterno(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento {
         val tipoSdk = when (tipo) {
             TipoPagamento.CREDITO -> PlugPag.TYPE_CREDITO
             TipoPagamento.DEBITO -> PlugPag.TYPE_DEBITO
@@ -122,7 +155,9 @@ class PagamentoPlugPag(
 
     private companion object {
         const val TAG = "PagamentoPlugPag"
-        /** código do SDK: IPlugPagWrapper.doPrintAction(5) = doNothing (sem via do cliente) */
+
+        /** IPlugPagWrapper.doPrintAction(5) = doNothing (sem via do cliente) */
         const val ACAO_NAO_FAZER_NADA = 5
+        const val MAX_TENTATIVAS = 40
     }
 }
