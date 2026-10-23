@@ -40,15 +40,21 @@ class Backend(
 
     private val jsonType = "application/json; charset=utf-8".toMediaType()
 
-    /** Lê os pedidos aguardando pagamento. */
-    fun pendentes(): List<PedidoPendente> {
+    /** Cliente da espera longa: o servidor segura a resposta até chegar pedido (ou ~20s). */
+    private val httpEspera = http.newBuilder().readTimeout(35, TimeUnit.SECONDS).build()
+
+    /**
+     * Lê os pedidos aguardando pagamento. Com [aguardarSeg] > 0 o servidor só responde quando
+     * há pedido ou o tempo acaba (long-poll): bem menos requisições e dados no terminal.
+     */
+    fun pendentes(aguardarSeg: Int = 0): List<PedidoPendente> {
         val req = Request.Builder()
-            .url("$baseUrl/api/maquininha/pendentes")
+            .url("$baseUrl/api/maquininha/pendentes?aguardar=$aguardarSeg")
             .header("x-device-token", deviceToken)
             .get()
             .build()
 
-        http.newCall(req).execute().use { resp ->
+        httpEspera.newCall(req).execute().use { resp ->
             val body = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) error("pendentes HTTP ${resp.code}: $body")
             val arr = JSONObject(body).optJSONArray("pendentes") ?: JSONArray()

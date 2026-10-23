@@ -53,12 +53,16 @@ class Orquestrador(
 
             while (isActive) {
                 try {
-                    val pendentes = backend.pendentes().filter { it.id !in processados }
+                    val inicio = System.currentTimeMillis()
+                    val pendentes = backend.pendentes(ESPERA_SEG).filter { it.id !in processados }
                     if (pendentes.isNotEmpty()) processar(pendentes.first())
+                    // Se o servidor respondeu na hora sem pedido (servidor antigo, sem espera longa), não martela.
+                    val esperou = System.currentTimeMillis() - inicio > 5000
+                    delay(if (pendentes.isEmpty() && esperou) 300 else 1500)
                 } catch (e: Exception) {
                     Log.w(TAG, "loop: ${e.message}")
+                    delay(5000)
                 }
-                delay(3000)
             }
         }
     }
@@ -102,7 +106,7 @@ class Orquestrador(
 
     private suspend fun vigiarCancelamento(pedido: PedidoPendente) {
         while (currentCoroutineContext().isActive) {
-            delay(2000)
+            delay(3000)
             try {
                 val status = backend.statusPedido(pedido.id)
                 if (status.isNotBlank() && status != "aguardando_pagamento") {
@@ -142,5 +146,8 @@ class Orquestrador(
 
     private companion object {
         const val TAG = "Orquestrador"
+
+        /** Espera longa (segundos) na consulta de pedidos: poucas requisições = pouco consumo de dados. */
+        const val ESPERA_SEG = 20
     }
 }
