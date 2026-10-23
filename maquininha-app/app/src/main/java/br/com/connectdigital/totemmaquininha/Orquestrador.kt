@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 
 sealed class Estado {
     data object Iniciando : Estado()
@@ -78,12 +79,21 @@ class Orquestrador(
         }
 
         // Se o cliente cancelar no totem durante a cobrança, tira a tela de pagamento da maquininha.
-        val vigia = scope.launch(Dispatchers.IO) { vigiarCancelamento(pedido) }
+        val autorizado = AtomicBoolean(false)
+        val vigia = scope.launch(Dispatchers.IO) { vigiarCancelamento(pedido, autorizado) }
+
+        // Assim que o terminal autoriza, o totem já mostra "aprovado" (sem esperar o cliente retirar o cartão).
+        // O id da transação e a bandeira seguem no aviso final, quando o doPayment termina.
+        pagamento.definirAoAutorizar {
+            autorizado.set(true)
+            reportar(pedido, aprovado = true, transacaoId = null, bandeira = null)
+        }
 
         val res = try {
             withContext(Dispatchers.IO) { pagamento.cobrar(pedido.valorCentavos, tipo) }
         } catch (e: Exception) {
             Log.e(TAG, "cobrar falhou", e)
+            pagamento.definirAoAutorizar(null)
             vigia.cancel()
             reportar(pedido, aprovado = false, transacaoId = null, bandeira = null)
             _estado.value = Estado.Erro(e.message ?: "Falha na cobrança")
@@ -91,6 +101,7 @@ class Orquestrador(
             return@withLock
         }
 
+        pagamento.definirAoAutorizar(null)
         vigia.cancel()
         reportar(pedido, res.aprovado, res.transacaoId, res.bandeira)
 
@@ -104,9 +115,11 @@ class Orquestrador(
         volta()
     }
 
-    private suspend fun vigiarCancelamento(pedido: PedidoPendente) {
+    private suspend fun vigiarCancelamento(pedido: PedidoPendente, autorizado: AtomicBoolean) {
         while (currentCoroutineContext().isActive) {
             delay(3000)
+            // já autorizado pelo terminal: não aborta mais (o pedido virou "pago" no servidor)
+            if (autorizado.get()) return
             try {
                 val status = backend.statusPedido(pedido.id)
                 if (status.isNotBlank() && status != "aguardando_pagamento") {

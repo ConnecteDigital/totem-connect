@@ -110,6 +110,17 @@ export async function confirmarPagamento(
   if (error) throw error
   if (!pedido) throw new Error('Pedido não encontrado.')
   if (pedido.status !== 'aguardando_pagamento') {
+    // O app da maquininha confirma cedo (ao autorizar) e de novo ao terminar, já com id e bandeira:
+    // o 2º aviso só completa os dados da transação.
+    if (pedido.status === 'em_preparo' && args.resultado === 'aprovado' && args.transacaoId) {
+      const completar: Record<string, unknown> = { transacao_id_maquininha: args.transacaoId }
+      if (args.bandeira) completar.bandeira = args.bandeira
+      await supa
+        .from('pagamentos')
+        .update(completar)
+        .eq('pedido_id', args.pedidoId)
+        .is('transacao_id_maquininha', null)
+    }
     return { ok: true, status: pedido.status } // idempotente
   }
 

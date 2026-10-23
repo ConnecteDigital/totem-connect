@@ -47,6 +47,8 @@ class PagamentoPlugPag(
                         Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
                         if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
                             responderComprovanteSemVia(pp)
+                            val aviso = aoAutorizar
+                            if (aviso != null) Thread { aviso() }.start()
                         }
                     }
                 })
@@ -73,6 +75,13 @@ class PagamentoPlugPag(
     }
 
     private var ativado = false
+
+    @Volatile
+    private var aoAutorizar: (() -> Unit)? = null
+
+    override fun definirAoAutorizar(callback: (() -> Unit)?) {
+        aoAutorizar = callback
+    }
 
     /** true enquanto um doPayment está em andamento (usado pelo laço que responde o comprovante). */
     @Volatile
@@ -136,13 +145,42 @@ class PagamentoPlugPag(
             "TOTEM",
             false, // printReceipt: a senha sai na impressora do totem. CONFIRMAR com a PagBank se exigem o comprovante do terminal
         )
+        val antes = ultimaAprovada()?.transactionId
         val res = plugpag.doPayment(dados)
+        Log.i(
+            TAG,
+            "resultado tipo=$tipoSdk result=${res.result} erro=${res.errorCode} " +
+                "msg=${res.message} bandeira=${res.cardBrand} codigo=${res.transactionCode}",
+        )
+        if (res.result != PlugPag.RET_OK) {
+            // Rede de segurança: a maquininha pode ter aprovado mesmo devolvendo erro (já aconteceu no
+            // crédito). Se apareceu uma transação aprovada nova, é ela — nunca cobrar o cliente duas vezes.
+            val nova = ultimaAprovada()
+            if (nova?.transactionId != null && nova.transactionId != antes) {
+                Log.w(TAG, "doPayment devolveu erro, mas há transação aprovada nova: ${nova.transactionId} (valor=${nova.amount})")
+                return ResultadoPagamento(
+                    aprovado = true,
+                    transacaoId = nova.transactionId ?: nova.transactionCode,
+                    bandeira = nova.cardBrand ?: res.cardBrand,
+                    mensagem = nova.message,
+                )
+            }
+        }
         return ResultadoPagamento(
             aprovado = res.result == PlugPag.RET_OK,
             transacaoId = res.transactionId ?: res.transactionCode,
             bandeira = res.cardBrand,
             mensagem = res.message,
         )
+    }
+
+    /** Última transação aprovada guardada no terminal (ou null se não houver / falhar). */
+    private fun ultimaAprovada(): PlugPagTransactionResult? = try {
+        val r = plugpag.getLastApprovedTransaction()
+        if (r.result == PlugPag.RET_OK) r else null
+    } catch (e: Exception) {
+        Log.w(TAG, "ultimaAprovada: ${e.message}")
+        null
     }
 
     override fun abortar() {

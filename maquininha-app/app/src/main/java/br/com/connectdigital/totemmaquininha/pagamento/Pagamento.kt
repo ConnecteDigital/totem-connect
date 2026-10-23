@@ -32,4 +32,10 @@ interface Pagamento {
 
     /** Aborta uma cobrança em andamento (ex: timeout do totem). */
     fun abortar()
+
+    /**
+     * Avisa assim que o terminal AUTORIZA a transação (antes do cliente retirar o cartão), para o
+     * totem mostrar "aprovado" na hora. Chamado em outra thread; null desliga o aviso.
+     */
+    fun definirAoAutorizar(callback: (() -> Unit)?) {}
 }
