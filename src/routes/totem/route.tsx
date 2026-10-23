@@ -35,9 +35,12 @@ function TotemShell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
-  // não monitora na tela ociosa nem na confirmação (que tem retorno próprio)
+  // não monitora na tela ociosa, na confirmação nem enquanto aguarda o pagamento na maquininha
+  // (essas telas têm retorno próprio; resetar no meio da cobrança perderia o pedido do cliente)
   const monitorar =
-    pathname !== '/totem' && pathname !== '/totem/pedido-realizado'
+    pathname !== '/totem' &&
+    pathname !== '/totem/pedido-realizado' &&
+    pathname !== '/totem/aguardando-pagamento'
 
   const { avisando, segundos } = useInatividade({
     ativo: monitorar,

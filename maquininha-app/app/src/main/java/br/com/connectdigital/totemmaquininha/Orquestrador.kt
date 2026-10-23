@@ -25,7 +25,7 @@ sealed class Estado {
     /** Terminal autorizou, mas o cliente ainda não retirou o cartão. */
     data class Autorizado(val numero: Int) : Estado()
     data class Aprovado(val numero: Int) : Estado()
-    data class Recusado(val numero: Int) : Estado()
+    data class Recusado(val numero: Int, val motivo: String? = null) : Estado()
     data class Erro(val mensagem: String) : Estado()
 }
 
@@ -113,9 +113,9 @@ class Orquestrador(
         } else {
             // recusado: libera pra nova tentativa
             processados.remove(pedido.id)
-            _estado.value = Estado.Recusado(pedido.numeroPedido)
+            _estado.value = Estado.Recusado(pedido.numeroPedido, res.mensagem)
         }
-        volta()
+        volta(if (res.aprovado) 4000 else 6000) // dá tempo de ler o motivo antes da próxima tentativa
     }
 
     private suspend fun vigiarCancelamento(pedido: PedidoPendente, autorizado: AtomicBoolean) {
@@ -155,8 +155,8 @@ class Orquestrador(
         }
     }
 
-    private suspend fun volta() {
-        delay(4000)
+    private suspend fun volta(ms: Long = 4000) {
+        delay(ms)
         if (_estado.value !is Estado.Cobrando) _estado.value = Estado.Aguardando
     }
 

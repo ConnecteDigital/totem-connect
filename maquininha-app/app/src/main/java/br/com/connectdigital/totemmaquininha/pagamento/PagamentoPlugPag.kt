@@ -45,6 +45,7 @@ class PagamentoPlugPag(
                 pp.setEventListener(object : PlugPagEventListener {
                     override fun onEvent(p0: PlugPagEventData) {
                         Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
+                        motivoDoEvento(p0.eventCode)?.let { ultimoMotivo = it }
                         if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
                             responderComprovanteSemVia(pp)
                             val aviso = aoAutorizar
@@ -75,6 +76,31 @@ class PagamentoPlugPag(
     }
 
     private var ativado = false
+
+    /** Último evento de falha do terminal na cobrança atual (para explicar a recusa na tela). */
+    @Volatile
+    private var ultimoMotivo: String? = null
+
+    private fun motivoDoEvento(codigo: Int): String? = when (codigo) {
+        PlugPagEventData.EVENT_CODE_CONTACTLESS_ERROR ->
+            "Erro de comunicação com o cartão. Aproxime de novo ou insira o cartão"
+        PlugPagEventData.EVENT_CODE_USE_CHIP -> "Insira o cartão (chip)"
+        PlugPagEventData.EVENT_CODE_USE_TARJA -> "Passe o cartão (tarja)"
+        PlugPagEventData.EVENT_CODE_SALE_NOT_APPROVED -> "Pagamento não aprovado"
+        else -> null
+    }
+
+    /** Texto para o cliente quando o doPayment não aprova: erro de comunicação x recusa do emissor. */
+    private fun explicarFalha(result: Int, codigoErro: String?, mensagem: String?): String {
+        val comunicacao = result == PlugPag.COMMUNICATION_ERROR || result == PlugPag.HOST_ERROR
+        val base = when {
+            comunicacao -> "Erro de comunicação. Tente de novo"
+            !mensagem.isNullOrBlank() -> mensagem
+            ultimoMotivo != null -> ultimoMotivo!!
+            else -> "Pagamento não aprovado"
+        }
+        return if (codigoErro.isNullOrBlank() || codigoErro == PlugPag.ERROR_CODE_OK) base else "$base ($codigoErro)"
+    }
 
     @Volatile
     private var aoAutorizar: (() -> Unit)? = null
@@ -124,6 +150,7 @@ class PagamentoPlugPag(
             Log.w(TAG, "renovar ouvinte: ${e.message}")
         }
         pagando = true
+        ultimoMotivo = null
         try {
             return cobrarInterno(valorCentavos, tipo)
         } finally {
@@ -166,11 +193,12 @@ class PagamentoPlugPag(
                 )
             }
         }
+        val aprovado = res.result == PlugPag.RET_OK
         return ResultadoPagamento(
-            aprovado = res.result == PlugPag.RET_OK,
+            aprovado = aprovado,
             transacaoId = res.transactionId ?: res.transactionCode,
             bandeira = res.cardBrand,
-            mensagem = res.message,
+            mensagem = if (aprovado) res.message else explicarFalha(res.result ?: PlugPag.UNKNOWN_ERROR_CODE, res.errorCode, res.message),
         )
     }
 

@@ -48,7 +48,8 @@ class MainActivity : AppCompatActivity() {
             is Estado.Cobrando -> "Cobrando #${e.numero}" to brl.format(e.valorCentavos / 100.0)
             is Estado.Autorizado -> "Pagamento aprovado" to "Retire o cartão · Pedido #${e.numero}"
             is Estado.Aprovado -> "Pagamento aprovado" to "Pedido #${e.numero}"
-            is Estado.Recusado -> "Recusado" to "Pedido #${e.numero} - tente de novo"
+            is Estado.Recusado -> "Pagamento não concluído" to
+                "${e.motivo ?: "Tente de novo"}\nPedido #${e.numero} — tente de novo"
             is Estado.Erro -> "Erro" to e.mensagem
         }
         binding.estado.text = titulo
