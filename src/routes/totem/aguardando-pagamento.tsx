@@ -6,7 +6,8 @@ import { CabecalhoTotem } from '#/components/totem/CabecalhoTotem'
 import { Botao } from '#/components/totem/Botao'
 import { IconeCartao } from '#/components/icones'
 
-const TIMEOUT_S = 150
+// tempo para o cliente achar o cartão/senha e pagar; esgotado, o pedido é cancelado
+const TIMEOUT_S = 240
 
 export const Route = createFileRoute('/totem/aguardando-pagamento')({
   component: Aguardando,
@@ -125,7 +126,9 @@ function Aguardando() {
             style={{ width: `${(restante / TIMEOUT_S) * 100}%` }}
           />
         </div>
-        <p className="mt-2 text-sm text-white/40">Expira em {restante}s</p>
+        <p className="mt-2 text-sm text-white/40">
+          Tempo para pagar: {Math.floor(restante / 60)}:{String(restante % 60).padStart(2, '0')}
+        </p>
 
         <Botao variante="secundario" className="mt-8" disabled={encerrando} onClick={encerrar}>
           Cancelar pagamento
