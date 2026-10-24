@@ -96,7 +96,11 @@ class PagamentoPlugPag(
     /** Texto para o cliente quando o doPayment não aprova: erro de comunicação x recusa do emissor. */
     private fun explicarFalha(result: Int, codigoErro: String?, mensagem: String?): String {
         val comunicacao = result == PlugPag.COMMUNICATION_ERROR || result == PlugPag.HOST_ERROR
+        // M3011 / -1005 ("Transação não autorizada") é o que o terminal devolve quando a leitura do cartão
+        // por aproximação falha (cartão longe ou tirado cedo); a recusa do emissor vem com outro código.
+        val leitura = result == -1005 || codigoErro == "M3011"
         val base = when {
+            leitura -> "Leitura do cartão não concluída. Aproxime bem de perto ou insira o cartão"
             comunicacao -> "Erro de comunicação. Tente de novo"
             !mensagem.isNullOrBlank() -> mensagem
             ultimoMotivo != null -> ultimoMotivo!!
