@@ -42,19 +42,22 @@ class PagamentoPlugPag(
             try {
                 val rl = pp.setPrintActionListener(ouvinteComprovante(pp))
                 Log.i(TAG, "setPrintActionListener -> result=${rl.result}")
-                pp.setEventListener(object : PlugPagEventListener {
-                    override fun onEvent(p0: PlugPagEventData) {
-                        Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
-                        motivoDoEvento(p0.eventCode)?.let { ultimoMotivo = it }
-                        if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
-                            responderComprovanteSemVia(pp)
-                            val aviso = aoAutorizar
-                            if (aviso != null) Thread { aviso() }.start()
-                        }
-                    }
-                })
+                pp.setEventListener(ouvinteEventos(pp))
             } catch (e: Exception) {
                 Log.w(TAG, "listeners: ${e.message}")
+            }
+        }
+    }
+
+    private fun ouvinteEventos(pp: PlugPag) = object : PlugPagEventListener {
+        override fun onEvent(p0: PlugPagEventData) {
+            Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
+            motivoDoEvento(p0.eventCode)?.let { ultimoMotivo = it }
+            if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
+                responderComprovanteSemVia(pp)
+                val aviso = aoAutorizar
+                Log.i(TAG, "autorizado: aviso ${if (aviso != null) "ligado" else "AUSENTE"}")
+                if (aviso != null) Thread { aviso() }.start()
             }
         }
     }
@@ -141,24 +144,32 @@ class PagamentoPlugPag(
         Log.i(TAG, "terminal ativado")
     }
 
-    override suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento {
+    /**
+     * Última transação aprovada que o terminal tinha ANTES da 1ª tentativa de cada pedido.
+     * Se numa tentativa seguinte aparecer uma aprovada nova com o mesmo valor, o cliente já pagou:
+     * não cobra de novo (evita "transação duplicada").
+     */
+    private val baseline = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    override suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento, referencia: String): ResultadoPagamento {
         ativar()
-        // O registro do ouvinte pode expirar com o tempo: renova antes de cada cobrança.
+        // O registro dos ouvintes pode expirar com o tempo: renova antes de cada cobrança.
         try {
             plugpag.setPrintActionListener(ouvinteComprovante(plugpag))
+            plugpag.setEventListener(ouvinteEventos(plugpag))
         } catch (e: Exception) {
-            Log.w(TAG, "renovar ouvinte: ${e.message}")
+            Log.w(TAG, "renovar ouvintes: ${e.message}")
         }
         pagando = true
         ultimoMotivo = null
         try {
-            return cobrarInterno(valorCentavos, tipo)
+            return cobrarInterno(valorCentavos, tipo, referencia)
         } finally {
             pagando = false
         }
     }
 
-    private fun cobrarInterno(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento {
+    private fun cobrarInterno(valorCentavos: Long, tipo: TipoPagamento, referencia: String): ResultadoPagamento {
         val tipoSdk = when (tipo) {
             TipoPagamento.CREDITO -> PlugPag.TYPE_CREDITO
             TipoPagamento.DEBITO -> PlugPag.TYPE_DEBITO
@@ -172,7 +183,14 @@ class PagamentoPlugPag(
             "TOTEM",
             false, // printReceipt: a senha sai na impressora do totem. CONFIRMAR com a PagBank se exigem o comprovante do terminal
         )
-        val antes = ultimaAprovada()?.transactionId
+        val ultima = ultimaAprovada()
+        val base = if (referencia.isBlank()) (ultima?.transactionId ?: "") else baseline.getOrPut(referencia) { ultima?.transactionId ?: "" }
+        Log.i(TAG, "cobrando ref=$referencia valor=$valorCentavos baseline=$base ultima=${ultima?.transactionId} (${ultima?.amount})")
+        if (baseline.containsKey(referencia) && ultima?.transactionId != null && ultima.transactionId != base && valorConfere(ultima, valorCentavos)) {
+            Log.w(TAG, "retentativa: o terminal já tem a aprovação ${ultima.transactionId} deste pedido — não cobra de novo")
+            baseline.remove(referencia)
+            return aprovadaDe(ultima, null)
+        }
         val res = plugpag.doPayment(dados)
         Log.i(
             TAG,
@@ -183,23 +201,34 @@ class PagamentoPlugPag(
             // Rede de segurança: a maquininha pode ter aprovado mesmo devolvendo erro (já aconteceu no
             // crédito). Se apareceu uma transação aprovada nova, é ela — nunca cobrar o cliente duas vezes.
             val nova = ultimaAprovada()
-            if (nova?.transactionId != null && nova.transactionId != antes) {
+            Log.i(TAG, "pós-erro: ultimaAprovada=${nova?.transactionId} (${nova?.amount}) baseline=$base")
+            if (nova?.transactionId != null && nova.transactionId != base && valorConfere(nova, valorCentavos)) {
                 Log.w(TAG, "doPayment devolveu erro, mas há transação aprovada nova: ${nova.transactionId} (valor=${nova.amount})")
-                return ResultadoPagamento(
-                    aprovado = true,
-                    transacaoId = nova.transactionId ?: nova.transactionCode,
-                    bandeira = nova.cardBrand ?: res.cardBrand,
-                    mensagem = nova.message,
-                )
+                baseline.remove(referencia)
+                return aprovadaDe(nova, res.cardBrand)
             }
         }
         val aprovado = res.result == PlugPag.RET_OK
+        if (aprovado) baseline.remove(referencia)
         return ResultadoPagamento(
             aprovado = aprovado,
             transacaoId = res.transactionId ?: res.transactionCode,
             bandeira = res.cardBrand,
             mensagem = if (aprovado) res.message else explicarFalha(res.result ?: PlugPag.UNKNOWN_ERROR_CODE, res.errorCode, res.message),
         )
+    }
+
+    private fun aprovadaDe(r: PlugPagTransactionResult, bandeiraAlt: String?) = ResultadoPagamento(
+        aprovado = true,
+        transacaoId = r.transactionId ?: r.transactionCode,
+        bandeira = r.cardBrand ?: bandeiraAlt,
+        mensagem = r.message,
+    )
+
+    /** O valor da transação do terminal é o do pedido? (se o terminal não informar o valor, aceita) */
+    private fun valorConfere(r: PlugPagTransactionResult, valorCentavos: Long): Boolean {
+        val v = r.amount?.filter { it.isDigit() }?.toLongOrNull() ?: return true
+        return v == valorCentavos
     }
 
     /** Última transação aprovada guardada no terminal (ou null se não houver / falhar). */

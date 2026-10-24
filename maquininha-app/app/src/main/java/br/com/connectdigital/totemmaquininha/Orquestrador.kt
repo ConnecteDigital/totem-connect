@@ -93,7 +93,7 @@ class Orquestrador(
         }
 
         val res = try {
-            withContext(Dispatchers.IO) { pagamento.cobrar(pedido.valorCentavos, tipo) }
+            withContext(Dispatchers.IO) { pagamento.cobrar(pedido.valorCentavos, tipo, pedido.id) }
         } catch (e: Exception) {
             Log.e(TAG, "cobrar falhou", e)
             pagamento.definirAoAutorizar(null)

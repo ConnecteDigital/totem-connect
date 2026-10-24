@@ -28,7 +28,7 @@ interface Pagamento {
     suspend fun ativar()
 
     /** Executa a cobrança. Bloqueante até o cliente concluir na maquininha. */
-    suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento
+    suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento, referencia: String = ""): ResultadoPagamento
 
     /** Aborta uma cobrança em andamento (ex: timeout do totem). */
     fun abortar()

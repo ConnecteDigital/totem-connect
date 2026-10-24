@@ -10,7 +10,7 @@ class PagamentoSimulado : Pagamento {
         Log.i(TAG, "ativar() simulado")
     }
 
-    override suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento): ResultadoPagamento {
+    override suspend fun cobrar(valorCentavos: Long, tipo: TipoPagamento, referencia: String): ResultadoPagamento {
         Log.i(TAG, "cobrar() simulado: $valorCentavos centavos, $tipo")
         delay(4000)
         return ResultadoPagamento(
