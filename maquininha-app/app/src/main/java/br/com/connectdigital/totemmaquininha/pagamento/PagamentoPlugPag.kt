@@ -53,6 +53,7 @@ class PagamentoPlugPag(
         override fun onEvent(p0: PlugPagEventData) {
             Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
             motivoDoEvento(p0.eventCode)?.let { ultimoMotivo = it }
+            if (p0.eventCode == PlugPagEventData.EVENT_CODE_INSERTED_CARD) cartaoDetectado = true
             if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
                 responderComprovanteSemVia(pp)
                 val aviso = aoAutorizar
@@ -166,6 +167,15 @@ class PagamentoPlugPag(
         }
         pagando = true
         ultimoMotivo = null
+        cancelado = false
+        reiniciando = false
+        vigiarSessao(
+            when (tipo) {
+                TipoPagamento.CREDITO -> PlugPag.TYPE_CREDITO
+                TipoPagamento.DEBITO -> PlugPag.TYPE_DEBITO
+                TipoPagamento.PIX -> PlugPag.TYPE_PIX
+            },
+        )
         try {
             return cobrarInterno(valorCentavos, tipo, referencia)
         } finally {
@@ -195,7 +205,7 @@ class PagamentoPlugPag(
             baseline.remove(referencia)
             return aprovadaDe(ultima, null)
         }
-        val res = plugpag.doPayment(dados)
+        val res = doPaymentRenovando(dados, tipoSdk)
         Log.i(
             TAG,
             "resultado tipo=$tipoSdk result=${res.result} erro=${res.errorCode} " +
@@ -244,7 +254,82 @@ class PagamentoPlugPag(
         null
     }
 
+    /** O totem cancelou (ou venceu o tempo): o laço de renovação não deve recomeçar. */
+    @Volatile
+    private var cancelado = false
+
+    /** O cliente encostou/inseriu o cartão nesta sessão (o terminal já está lendo). */
+    @Volatile
+    private var cartaoDetectado = false
+
+    /** Reinício feito pelo próprio app (não é cancelamento do cliente). */
+    @Volatile
+    private var reiniciando = false
+
+    /**
+     * Em crédito/débito, se o cartão não chega em [REINICIO_MS], reinicia a sessão do terminal.
+     * Observado no piloto: depois de ~1 min esperando, o leitor NFC não lê mais o cartão (erro M3011/
+     * "não autorizada"); aproximar logo no começo da sessão sempre aprova. Recomeçar mantém o leitor "fresco".
+     */
+    private fun doPaymentRenovando(dados: PlugPagPaymentData, tipoSdk: Int): PlugPagTransactionResult {
+        var res = plugpag.doPayment(dados)
+        if (tipoSdk == PlugPag.TYPE_PIX) return res
+        var voltas = 0
+        while (voltas < MAX_REINICIOS && reiniciando && !cancelado && res.result != PlugPag.RET_OK) {
+            voltas++
+            reiniciando = false
+            Log.i(TAG, "reiniciando a sessão do terminal (volta $voltas)")
+            try {
+                Thread.sleep(800)
+            } catch (_: InterruptedException) {
+            }
+            res = plugpag.doPayment(dados)
+        }
+        return res
+    }
+
+    private fun vigiarSessao(tipoSdk: Int) {
+        if (tipoSdk == PlugPag.TYPE_PIX) return
+        Thread {
+            while (pagando && !cancelado) {
+                cartaoDetectado = false
+                val inicio = System.currentTimeMillis()
+                while (pagando && !cancelado && !cartaoDetectado &&
+                    System.currentTimeMillis() - inicio < REINICIO_MS
+                ) {
+                    try {
+                        Thread.sleep(500)
+                    } catch (_: InterruptedException) {
+                    }
+                }
+                if (!pagando || cancelado || cartaoDetectado) {
+                    // cartão chegou (ou acabou): se foi só o cartão, espera esta sessão terminar
+                    while (pagando && !cancelado && cartaoDetectado) {
+                        try {
+                            Thread.sleep(500)
+                        } catch (_: InterruptedException) {
+                        }
+                    }
+                    if (!pagando || cancelado) return@Thread
+                    continue
+                }
+                Log.i(TAG, "sem cartão há ${REINICIO_MS / 1000}s: abortando para reiniciar a sessão")
+                reiniciando = true
+                try {
+                    plugpag.abort()
+                } catch (e: Exception) {
+                    Log.w(TAG, "reinício: ${e.message}")
+                }
+                try {
+                    Thread.sleep(2500) // deixa o doPayment devolver e o laço recomeçar
+                } catch (_: InterruptedException) {
+                }
+            }
+        }.start()
+    }
+
     override fun abortar() {
+        cancelado = true
         try {
             plugpag.abort()
         } catch (e: Exception) {
@@ -258,5 +343,9 @@ class PagamentoPlugPag(
         /** IPlugPagWrapper.doPrintAction(5) = doNothing (sem via do cliente) */
         const val ACAO_NAO_FAZER_NADA = 5
         const val MAX_TENTATIVAS = 40
+
+        /** Sem cartão por este tempo, reinicia a sessão do terminal (leitor NFC "esfria" depois de ~1 min). */
+        const val REINICIO_MS = 30_000L
+        const val MAX_REINICIOS = 12
     }
 }
