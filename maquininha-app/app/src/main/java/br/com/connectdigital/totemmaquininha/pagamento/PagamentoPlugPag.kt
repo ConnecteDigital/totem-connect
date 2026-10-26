@@ -368,7 +368,8 @@ class PagamentoPlugPag(
     override fun abortar() {
         cancelado = true
         try {
-            plugpag.abort()
+            val r = plugpag.abort()
+            Log.i(TAG, "abort -> result=${r.result}")
         } catch (e: Exception) {
             Log.w(TAG, "abortar: ${e.message}")
         }

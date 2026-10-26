@@ -109,7 +109,14 @@ export async function confirmarPagamento(
     .maybeSingle()
   if (error) throw error
   if (!pedido) throw new Error('Pedido não encontrado.')
-  if (pedido.status !== 'aguardando_pagamento') {
+  // Pix: o terminal não deixa cancelar o QR (fica até expirar, ~3 min). Se o cliente pagar um pedido já
+  // cancelado no totem, o dinheiro entrou: o pedido volta para a cozinha em vez de ser descartado.
+  const pagoAposCancelar = pedido.status === 'cancelado' && args.resultado === 'aprovado'
+  if (pagoAposCancelar) {
+    // eslint-disable-next-line no-console
+    console.warn('[pagamento] aprovado depois de cancelado — pedido reaberto:', args.pedidoId)
+  }
+  if (pedido.status !== 'aguardando_pagamento' && !pagoAposCancelar) {
     // O app da maquininha confirma cedo (ao autorizar) e de novo ao terminar, já com id e bandeira:
     // o 2º aviso só completa os dados da transação.
     if (pedido.status === 'em_preparo' && args.resultado === 'aprovado' && args.transacaoId) {
@@ -137,6 +144,7 @@ export async function confirmarPagamento(
 
   if (aprovado) {
     const patch: Record<string, unknown> = { status: 'em_preparo', pago_em: agora }
+    if (pagoAposCancelar) patch.cancelado_em = null
     if (args.formaReal) patch.forma_pagamento = args.formaReal
     const e3 = await supa.from('pedidos').update(patch).eq('id', args.pedidoId)
     if (e3.error) throw e3.error
