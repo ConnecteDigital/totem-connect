@@ -7,6 +7,8 @@ data class ResultadoPagamento(
     val transacaoId: String? = null,
     val bandeira: String? = null,
     val mensagem: String? = null,
+    /** O cliente tocou em "Cancelar" na própria maquininha (não foi o totem nem o reinício automático). */
+    val canceladoNoTerminal: Boolean = false,
 )
 
 /**

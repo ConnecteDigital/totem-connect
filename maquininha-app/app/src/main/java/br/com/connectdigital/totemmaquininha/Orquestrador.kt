@@ -117,6 +117,19 @@ class Orquestrador(
         pagamento.definirAoAutorizar(null)
         pagamento.definirAoRecusarComCartao(null)
         vigia.cancel()
+
+        if (res.canceladoNoTerminal) {
+            // cliente desistiu na própria maquininha: cancela o pedido (o totem volta ao início), sem recobrar
+            try {
+                backend.confirmar(pedido.id, aprovado = false, transacaoId = null, bandeira = null, formaReal = pedido.forma, cancelado = true)
+            } catch (e: Exception) {
+                Log.e(TAG, "cancelar pedido ${pedido.numeroPedido} falhou", e)
+            }
+            _estado.value = Estado.Recusado(pedido.numeroPedido, "Pagamento cancelado na maquininha")
+            volta()
+            return@withLock
+        }
+
         reportar(pedido, res.aprovado, res.transacaoId, res.bandeira)
 
         if (res.aprovado) {

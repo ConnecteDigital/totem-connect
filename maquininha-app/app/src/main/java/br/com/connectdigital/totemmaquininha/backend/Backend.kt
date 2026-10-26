@@ -84,10 +84,11 @@ class Backend(
         transacaoId: String?,
         bandeira: String?,
         formaReal: String?,
+        cancelado: Boolean = false,
     ) {
         val payload = JSONObject().apply {
             put("pedidoId", pedidoId)
-            put("resultado", if (aprovado) "aprovado" else "recusado")
+            put("resultado", if (cancelado) "cancelado" else if (aprovado) "aprovado" else "recusado")
             put("transacaoId", transacaoId ?: JSONObject.NULL)
             put("bandeira", bandeira ?: JSONObject.NULL)
             put("formaReal", formaReal ?: JSONObject.NULL)

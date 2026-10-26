@@ -256,7 +256,10 @@ class PagamentoPlugPag(
         }
         val aprovado = res.result == PlugPag.RET_OK
         if (aprovado) baseline.remove(referencia)
+        val canceladoNoTerminal = res.result == PlugPag.OPERATION_ABORTED && !cancelado && !reiniciando
+        if (canceladoNoTerminal) Log.i(TAG, "cliente cancelou na maquininha")
         return ResultadoPagamento(
+            canceladoNoTerminal = canceladoNoTerminal,
             aprovado = aprovado,
             transacaoId = res.transactionId ?: res.transactionCode,
             bandeira = res.cardBrand,
