@@ -39,9 +39,9 @@ Somente o nosso servidor, via HTTPS (TLS 1.2+), sem tráfego em texto claro (`us
 
 | Endpoint | Uso | Frequência |
 |---|---|---|
-| `GET https://totem-connect-puce.vercel.app/api/maquininha/pendentes?aguardar=20` | buscar pedido aguardando pagamento | espera longa: o servidor segura a resposta até 20 s (cerca de 3 requisições por minuto em repouso) |
-| `GET https://totem-connect-puce.vercel.app/api/maquininha/status?pedidoId=…` | saber se o cliente cancelou no totem durante a cobrança | a cada 3 s, só enquanto há cobrança aberta |
-| `POST https://totem-connect-puce.vercel.app/api/maquininha/confirmar` | informar o resultado da cobrança | 1 a 2 por transação |
+| `GET https://www.connectotem.com.br/api/maquininha/pendentes?aguardar=20` | buscar pedido aguardando pagamento | espera longa: o servidor segura a resposta até 20 s (cerca de 3 requisições por minuto em repouso) |
+| `GET https://www.connectotem.com.br/api/maquininha/status?pedidoId=…` | saber se o cliente cancelou no totem durante a cobrança | a cada 3 s, só enquanto há cobrança aberta |
+| `POST https://www.connectotem.com.br/api/maquininha/confirmar` | informar o resultado da cobrança | 1 a 2 por transação |
 
 Autenticação por token do dispositivo (cabeçalho `x-device-token`). O app não recebe nem armazena dados de cartão: toda a captura é feita pelo PlugPagService.
 

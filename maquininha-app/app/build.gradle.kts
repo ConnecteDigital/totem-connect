@@ -24,7 +24,7 @@ android {
         versionCode = 2
         versionName = "0.2.0"
 
-        buildConfigField("String", "BASE_URL", "\"${prop("BASE_URL", "https://totem-connect-puce.vercel.app")}\"")
+        buildConfigField("String", "BASE_URL", "\"${prop("BASE_URL", "https://www.connectotem.com.br")}\"")
         buildConfigField("String", "DEVICE_TOKEN", "\"${prop("DEVICE_TOKEN", "tok_totem_piloto_TROQUE_ISTO")}\"")
         buildConfigField("String", "ACTIVATION_CODE", "\"${prop("ACTIVATION_CODE", "")}\"")
         // "SIMULADO" roda em qualquer aparelho; "PLUGPAG" usa o SDK real na Smart 2

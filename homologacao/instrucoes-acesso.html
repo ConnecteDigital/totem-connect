@@ -19,7 +19,7 @@
 <body>
 
 <h1>Totem · Maquininha — instruções para o teste funcional</h1>
-<p class="sub">Connect Digital · CNPJ 55.161.845/0001-50 · pacote <code>br.com.connectdigital.totemmaquininha</code> · versão 0.2.0 (versionCode 2) · PlugPagServiceWrapper 1.35.0</p>
+<p class="sub">Connect Digital · CNPJ 55.161.845/0001-50 · ID do aplicativo (nome do pacote Android, não é link): <code>br.com.connectdigital.totemmaquininha</code> · versão 0.2.0 (versionCode 2) · PlugPagServiceWrapper 1.35.0</p>
 
 <h2>Login e configuração</h2>
 <p><strong>O aplicativo não tem login, usuário nem senha.</strong> Não há nenhuma configuração a fazer no terminal: ao abrir, ele ativa o PinPad com o código do ambiente de teste e fica na tela <em>"Aguardando pedido"</em>.</p>
@@ -35,7 +35,7 @@
 <h2>Passo a passo para testar</h2>
 <ol>
   <li>Instale o APK no terminal e abra o aplicativo <strong>Totem · Maquininha</strong>. Aguarde a tela <em>"Aguardando pedido"</em>.</li>
-  <li>Num computador ou celular, abra o totem web: <strong>https://totem-connect-puce.vercel.app/totem</strong>.</li>
+  <li>Num computador ou celular, abra o totem web: <strong>https://www.connectotem.com.br/totem</strong>.</li>
   <li>Toque na tela, escolha um produto e avance até o pagamento. Escolha <strong>Crédito</strong>, <strong>Débito</strong> ou <strong>Pix</strong> e confirme.</li>
   <li>Em poucos segundos a cobrança abre sozinha no terminal, com o valor do pedido. Pague normalmente (aproximação, chip/senha ou QR do Pix).</li>
   <li>Aprovado: o terminal mostra <em>"Pagamento aprovado"</em> e o totem vai para <em>"Pedido realizado"</em>.</li>
@@ -58,7 +58,7 @@
   <tr><td><code>GET /api/maquininha/status?pedidoId=…</code></td><td>Saber se o cliente cancelou no totem, a cada 3 s, só durante a cobrança.</td></tr>
   <tr><td><code>POST /api/maquininha/confirmar</code></td><td>Informar o resultado (aprovado, recusado ou cancelado).</td></tr>
 </table>
-<p>Base: <code>https://totem-connect-puce.vercel.app</code> · autenticação por token do dispositivo (cabeçalho <code>x-device-token</code>). O aplicativo não recebe nem armazena dados de cartão.</p>
+<p>Base: <code>https://www.connectotem.com.br</code> · autenticação por token do dispositivo (cabeçalho <code>x-device-token</code>). O aplicativo não recebe nem armazena dados de cartão.</p>
 
 <h2>Observações</h2>
 <ul>
