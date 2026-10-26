@@ -54,7 +54,14 @@ class PagamentoPlugPag(
             Log.i(TAG, "evento ${p0.eventCode}: ${p0.customMessage}")
             motivoDoEvento(p0.eventCode)?.let { ultimoMotivo = it }
             if (p0.eventCode == PlugPagEventData.EVENT_CODE_INSERTED_CARD) cartaoDetectado = true
+            if (p0.eventCode == PlugPagEventData.EVENT_CODE_WAITING_REMOVE_CARD && !autorizadoNaSessao && !avisouRetirada) {
+                avisouRetirada = true
+                val aviso = aoRecusarComCartao
+                Log.i(TAG, "retire o cartão sem autorização: não aprovado")
+                if (aviso != null) Thread { aviso() }.start()
+            }
             if (p0.eventCode == PlugPagEventData.EVENT_CODE_SALE_APPROVED) {
+                autorizadoNaSessao = true
                 responderComprovanteSemVia(pp)
                 val aviso = aoAutorizar
                 Log.i(TAG, "autorizado: aviso ${if (aviso != null) "ligado" else "AUSENTE"}")
@@ -120,6 +127,26 @@ class PagamentoPlugPag(
 
     override fun definirAoAutorizar(callback: (() -> Unit)?) {
         aoAutorizar = callback
+    }
+
+    @Volatile
+    private var aoRecusarComCartao: (() -> Unit)? = null
+
+    override fun definirAoRecusarComCartao(callback: (() -> Unit)?) {
+        aoRecusarComCartao = callback
+    }
+
+    /** Por sessão do terminal (cada doPayment): já autorizou? já avisou do "retire o cartão"? */
+    @Volatile
+    private var autorizadoNaSessao = false
+
+    @Volatile
+    private var avisouRetirada = false
+
+    private fun iniciarSessao(dados: PlugPagPaymentData): PlugPagTransactionResult {
+        autorizadoNaSessao = false
+        avisouRetirada = false
+        return plugpag.doPayment(dados)
     }
 
     /** true enquanto um doPayment está em andamento (usado pelo laço que responde o comprovante). */
@@ -277,7 +304,7 @@ class PagamentoPlugPag(
      * "não autorizada"); aproximar logo no começo da sessão sempre aprova. Recomeçar mantém o leitor "fresco".
      */
     private fun doPaymentRenovando(dados: PlugPagPaymentData, tipoSdk: Int): PlugPagTransactionResult {
-        var res = plugpag.doPayment(dados)
+        var res = iniciarSessao(dados)
         if (tipoSdk == PlugPag.TYPE_PIX) return res
         var voltas = 0
         while (voltas < MAX_REINICIOS && reiniciando && !cancelado && res.result != PlugPag.RET_OK) {
@@ -293,7 +320,7 @@ class PagamentoPlugPag(
                 Log.i(TAG, "cancelado durante o reinício: não reabre a cobrança")
                 break
             }
-            res = plugpag.doPayment(dados)
+            res = iniciarSessao(dados)
         }
         return res
     }

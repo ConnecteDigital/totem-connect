@@ -25,6 +25,9 @@ sealed class Estado {
     /** Terminal autorizou, mas o cliente ainda não retirou o cartão. */
     data class Autorizado(val numero: Int) : Estado()
     data class Aprovado(val numero: Int) : Estado()
+
+    /** Não aprovado com o cartão ainda inserido: o terminal espera a retirada para encerrar. */
+    data class RetireCartao(val numero: Int) : Estado()
     data class Recusado(val numero: Int, val motivo: String? = null) : Estado()
     data class Erro(val mensagem: String) : Estado()
 }
@@ -92,11 +95,18 @@ class Orquestrador(
             reportar(pedido, aprovado = true, transacaoId = null, bandeira = null)
         }
 
+        // Cartão inserido e não aprovado: avisa já (na tela e no totem), sem esperar o cliente tirar o cartão.
+        pagamento.definirAoRecusarComCartao {
+            _estado.value = Estado.RetireCartao(pedido.numeroPedido)
+            reportar(pedido, aprovado = false, transacaoId = null, bandeira = null)
+        }
+
         val res = try {
             withContext(Dispatchers.IO) { pagamento.cobrar(pedido.valorCentavos, tipo, pedido.id) }
         } catch (e: Exception) {
             Log.e(TAG, "cobrar falhou", e)
             pagamento.definirAoAutorizar(null)
+            pagamento.definirAoRecusarComCartao(null)
             vigia.cancel()
             reportar(pedido, aprovado = false, transacaoId = null, bandeira = null)
             _estado.value = Estado.Erro(e.message ?: "Falha na cobrança")
@@ -105,6 +115,7 @@ class Orquestrador(
         }
 
         pagamento.definirAoAutorizar(null)
+        pagamento.definirAoRecusarComCartao(null)
         vigia.cancel()
         reportar(pedido, res.aprovado, res.transacaoId, res.bandeira)
 

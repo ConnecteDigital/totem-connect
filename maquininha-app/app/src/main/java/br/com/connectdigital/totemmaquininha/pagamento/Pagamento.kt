@@ -38,4 +38,10 @@ interface Pagamento {
      * totem mostrar "aprovado" na hora. Chamado em outra thread; null desliga o aviso.
      */
     fun definirAoAutorizar(callback: (() -> Unit)?) {}
+
+    /**
+     * Com cartão inserido o terminal só devolve o resultado quando o cliente retira o cartão. Este aviso
+     * chega quando ele pede "retire o cartão" SEM ter autorizado: a transação não foi aprovada.
+     */
+    fun definirAoRecusarComCartao(callback: (() -> Unit)?) {}
 }
