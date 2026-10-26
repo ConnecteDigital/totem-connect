@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Totem · Maquininha — instruções de teste</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #111; margin: 28px 36px; line-height: 1.45; }
+  h1 { font-size: 17pt; margin: 0 0 4px; }
+  h2 { font-size: 12.5pt; margin: 20px 0 6px; border-bottom: 2px solid #ff6a00; padding-bottom: 3px; }
+  .sub { color: #555; margin: 0 0 14px; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0; }
+  td, th { border: 1px solid #ccc; padding: 5px 7px; text-align: left; vertical-align: top; font-size: 10pt; }
+  th { background: #f3f3f3; }
+  code { font-family: Consolas, monospace; font-size: 9.5pt; background: #f5f5f5; padding: 0 3px; }
+  li { margin: 3px 0; }
+  .nota { background: #fff4ea; border-left: 4px solid #ff6a00; padding: 8px 10px; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<h1>Totem · Maquininha — instruções para o teste funcional</h1>
+<p class="sub">Connect Digital · CNPJ 55.161.845/0001-50 · pacote <code>br.com.connectdigital.totemmaquininha</code> · versão 0.2.0 (versionCode 2) · PlugPagServiceWrapper 1.35.0</p>
+
+<h2>Login e configuração</h2>
+<p><strong>O aplicativo não tem login, usuário nem senha.</strong> Não há nenhuma configuração a fazer no terminal: ao abrir, ele ativa o PinPad com o código do ambiente de teste e fica na tela <em>"Aguardando pedido"</em>.</p>
+
+<h2>O que o aplicativo faz</h2>
+<p>É a parte de pagamento de um totem de autoatendimento para lanchonetes. O cliente monta o pedido num tablet (o totem) e escolhe crédito, débito ou Pix. O aplicativo, no terminal SmartPOS:</p>
+<ol>
+  <li>consulta o nosso servidor (HTTPS) e recebe o pedido que aguarda pagamento;</li>
+  <li>abre a cobrança no terminal com <code>doPayment</code> (à vista), sem o operador digitar nada;</li>
+  <li>informa o resultado ao servidor. O totem avança e imprime a senha do pedido na impressora do próprio totem.</li>
+</ol>
+
+<h2>Passo a passo para testar</h2>
+<ol>
+  <li>Instale o APK no terminal e abra o aplicativo <strong>Totem · Maquininha</strong>. Aguarde a tela <em>"Aguardando pedido"</em>.</li>
+  <li>Num computador ou celular, abra o totem web: <strong>https://totem-connect-puce.vercel.app/totem</strong>.</li>
+  <li>Toque na tela, escolha um produto e avance até o pagamento. Escolha <strong>Crédito</strong>, <strong>Débito</strong> ou <strong>Pix</strong> e confirme.</li>
+  <li>Em poucos segundos a cobrança abre sozinha no terminal, com o valor do pedido. Pague normalmente (aproximação, chip/senha ou QR do Pix).</li>
+  <li>Aprovado: o terminal mostra <em>"Pagamento aprovado"</em> e o totem vai para <em>"Pedido realizado"</em>.</li>
+</ol>
+
+<h2>Cenários demonstrados no vídeo</h2>
+<table>
+  <tr><th>Cenário</th><th>Comportamento esperado</th></tr>
+  <tr><td>Débito com chip e senha</td><td>Aprovado; o totem avança assim que o terminal autoriza.</td></tr>
+  <tr><td>Crédito por aproximação</td><td>Aprovado.</td></tr>
+  <tr><td>Recusa (valor terminado em ,70 no sandbox)</td><td>O terminal mostra o motivo; a cobrança é reaberta para nova tentativa.</td></tr>
+  <tr><td>Cancelar no totem (cartão)</td><td>O app chama <code>abort()</code> e o terminal volta para "Aguardando pedido".</td></tr>
+  <tr><td>Cancelar no terminal ("Cancelar a venda" no Pix)</td><td>O pedido é cancelado no servidor e o totem volta ao início.</td></tr>
+</table>
+
+<h2>Serviços externos (todos HTTPS)</h2>
+<table>
+  <tr><th>Endpoint</th><th>Uso</th></tr>
+  <tr><td><code>GET /api/maquininha/pendentes?aguardar=20</code></td><td>Buscar pedido aguardando pagamento (espera longa de até 20 s).</td></tr>
+  <tr><td><code>GET /api/maquininha/status?pedidoId=…</code></td><td>Saber se o cliente cancelou no totem, a cada 3 s, só durante a cobrança.</td></tr>
+  <tr><td><code>POST /api/maquininha/confirmar</code></td><td>Informar o resultado (aprovado, recusado ou cancelado).</td></tr>
+</table>
+<p>Base: <code>https://totem-connect-puce.vercel.app</code> · autenticação por token do dispositivo (cabeçalho <code>x-device-token</code>). O aplicativo não recebe nem armazena dados de cartão.</p>
+
+<h2>Observações</h2>
+<ul>
+  <li>Sem comprovante no terminal (<code>printReceipt = false</code>). À pergunta de via do cliente, o app responde automaticamente <code>doPrintAction(5)</code> (sem via), pois não há operador.</li>
+  <li>Se o cartão não for apresentado em 30 s, o app reinicia a sessão do terminal. Isso mantém o leitor de aproximação ativo durante o tempo que o cliente tem para pagar.</li>
+</ul>
+
+<div class="nota">
+<strong>Dúvida para o time de Integrações:</strong> em cobranças Pix (<code>TYPE_PIX</code>), <code>abort()</code> retorna 0, mas a tela do QR Code (<code>QrCodeActivity</code>) permanece aberta até expirar (cerca de 3 min). O log do serviço só registra "Requesting operation abort" na expiração. Em crédito e débito o <code>abort()</code> funciona. Como cancelar uma cobrança Pix pendente a partir do aplicativo?
+</div>
+
+<p>Contato: Connect Digital — Jaguaquara/BA.</p>
+</body>
+</html>
