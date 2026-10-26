@@ -126,9 +126,10 @@ class Orquestrador(
             try {
                 val status = backend.statusPedido(pedido.id)
                 if (status.isNotBlank() && status != "aguardando_pagamento") {
+                    // insiste a cada volta: um abort que chega no meio de um reinício de sessão se perde
+                    // (o vigia só para quando a cobrança termina e o processar o cancela)
                     Log.i(TAG, "pedido ${pedido.numeroPedido} saiu de aguardando_pagamento ($status): abortando cobrança")
                     pagamento.abortar()
-                    return
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "vigia: ${e.message}")

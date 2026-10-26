@@ -101,7 +101,10 @@ class PagamentoPlugPag(
         // M3011 (-1005): o cartão foi lido, mas a autorização foi negada ("Transação não autorizada").
         val leitura = result == 83 || codigoErro == "C83"
         val naoAutorizada = result == -1005 || codigoErro == "M3011"
+        // -1004 (ex.: R 70 "LIGAR PARA O EMISSOR"): o banco do cartão negou — insistir com o mesmo cartão não adianta
+        val recusaBanco = result == -1004
         val base = when {
+            recusaBanco -> "Recusado pelo banco do cartão. Use outro cartão ou outra forma de pagamento"
             leitura -> "Não deu para ler o cartão por aproximação. Insira o cartão"
             naoAutorizada -> "Pagamento não autorizado. Tente de novo ou insira o cartão"
             comunicacao -> "Erro de comunicação. Tente de novo"
@@ -284,6 +287,11 @@ class PagamentoPlugPag(
             try {
                 Thread.sleep(800)
             } catch (_: InterruptedException) {
+            }
+            // o cliente pode ter cancelado no totem durante a pausa: não abre sessão nova
+            if (cancelado) {
+                Log.i(TAG, "cancelado durante o reinício: não reabre a cobrança")
+                break
             }
             res = plugpag.doPayment(dados)
         }
